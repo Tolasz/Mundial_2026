@@ -9,7 +9,7 @@ interface SignUpValues {
   nick: string
   inviteCode: string
 }
-
+// chuj
 export async function signUp(values: SignUpValues): Promise<{ success: boolean; error: string } | { success: true }> {
   const supabase = await createClient()
 
