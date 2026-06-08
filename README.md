@@ -25,6 +25,15 @@ pnpm test      # Testy jednostkowe (vitest)
 pnpm lint      # ESLint
 ```
 
+## Seed danych
+
+```bash
+pnpm seed      # Drużyny + 72 mecze fazy grupowej (idempotentny)
+```
+
+Pobiera dane z football-data.org (`FOOTBALL_API_KEY`); gdy API jest niedostępne,
+używa zaszytej listy zapasowej. Wymaga `SUPABASE_SERVICE_ROLE_KEY` w `.env.local`.
+
 ## Zmienne środowiskowe
 
 | Zmienna | Opis |
