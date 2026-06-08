@@ -7,7 +7,7 @@
 ## Cel projektu
 
 Web app do typowania **dokładnych wyników** meczów MŚ 2026 dla ~17 znajomych. Logowanie email+hasło,
-zamknięta rejestracja (kod zaproszenia), live ranking, blokada typów po starcie meczu, PL + dark mode.
+rejestracja email/hasło, live ranking, blokada typów po starcie meczu, PL + dark mode.
 Darmowy hosting: **Next.js + Supabase + Vercel**.
 
 ---
@@ -24,7 +24,7 @@ Darmowy hosting: **Next.js + Supabase + Vercel**.
 | Odblokowanie pucharu | Typy dostępne po wylosowaniu par (gdy znane obie drużyny) |
 | Mecz przełożony/nierozegrany | Typy zwracane **bez punktów** (`points = null`) |
 | Logowanie | Email + hasło (Supabase Auth) |
-| Rejestracja | **Zamknięta** — kod zaproszenia |
+| Rejestracja | **Otwarta** — email/hasło |
 | Źródło danych | **football-data.org** (free tier, World Cup) + panel admina jako backup |
 | Stack | Next.js (App Router) + Supabase (Postgres+Auth+RLS) + Vercel (Cron) |
 | Język / UI | Polski, panel admina, dark mode, responsywność mobilna |
@@ -89,7 +89,6 @@ supabase/
   `external_id`, `round_label`
 - **predictions**: `id`, `user_id` (FK), `match_id` (FK), `home_pick` (int), `away_pick` (int),
   `points_awarded` (int null), `created_at`, `updated_at`. **UNIQUE(user_id, match_id)**
-- **invite_codes**: `code` (text PK), `used_by` (uuid null), `used_at` (timestamptz null), `created_at`
 - **settings** (singleton): `championship_bonus_points` (int default **50**),
   `tournament_started` (bool), `champion_locked_at` (timestamptz null)
 - **Funkcje/widoki**: `leaderboard` (suma punktów + bonus per user), `recalc_match_points(match_id)`
@@ -99,7 +98,6 @@ supabase/
 - **predictions**: insert/update tylko gdy `auth.uid()=user_id AND now() < match.kickoff_at`;
   select własnych zawsze; select cudzych tylko gdy `now() >= match.kickoff_at`.
 - **matches/teams**: select all; modyfikacja tylko `service_role`/admin.
-- **invite_codes**: brak dostępu z `anon`; obsługa przez Server Action z `service_role`.
 - **admin**: polityki oparte o `profiles.is_admin`.
 
 ---
@@ -124,10 +122,10 @@ supabase/
 - **Akceptacja:** user nie odczyta cudzego typu przed kickoffem, nie zapisze typu po kickoffie,
   nie podniesie sobie `is_admin`.
 
-### T3 — Auth + rejestracja na kod  ·  dep: T1, T2
-- **Cel:** Logowanie email/hasło, rejestracja walidująca `invite_code` i tworząca profil z nickiem.
+### T3 — Auth + rejestracja  ·  dep: T1, T2
+- **Cel:** Logowanie email/hasło, rejestracja tworząca konto i profil z nickiem.
 - **Pliki:** `src/app/(auth)/login`, `src/app/(auth)/register`, Server Actions auth, `middleware.ts`.
-- **Akceptacja:** zły kod → odrzucenie; poprawny → konto + profil; kod oznaczony `used`;
+- **Akceptacja:** poprawne dane → konto + profil; nick unikalny (kolizja → błąd);
   chronione trasy przekierowują niezalogowanych.
 
 ### T4 — App shell + nawigacja + theme  ·  dep: T0, T3
@@ -187,9 +185,9 @@ supabase/
 - **Akceptacja:** typ pucharowy możliwy dopiero gdy znane obie drużyny; punktacja po 90 min.
 
 ### T13 — Panel admina  ·  dep: T2, T8
-- **Cel:** Ręczna korekta wyników + trigger przeliczenia; generowanie kodów; ustawianie par pucharowych; podgląd userów.
+- **Cel:** Ręczna korekta wyników + trigger przeliczenia; ustawianie par pucharowych; podgląd userów.
 - **Pliki:** `src/app/(admin)/admin/*`, actions z `service_role`, guard `is_admin`.
-- **Akceptacja:** admin nadpisuje wynik → punkty przeliczone; generuje działający kod zaproszenia.
+- **Akceptacja:** admin nadpisuje wynik → punkty przeliczone.
 
 ### T14 — Polish + obsługa błędów + deploy  ·  dep: wszystkie
 - **Cel:** Puste stany, błędy API, loading, responsywność, finalny dark mode, produkcyjny deploy.
@@ -203,7 +201,7 @@ supabase/
 - **Równolegle:** T5 (po T1) z T3/T4; T7 (po T1) z T6; T11 po T7/T3; T8 po T5+T7
 
 ## Weryfikacja (globalna)
-1. Rejestracja tylko z poprawnym kodem; zły odrzucony (T3)
+1. Rejestracja email/hasło tworzy konto + profil; nick unikalny (T3)
 2. Brak edycji typu po kickoffie — test API + UI (T6)
 3. Cudze typy ukryte przed kickoffem, widoczne po (T10)
 4. Testy jednostkowe punktacji 3/1/0 (T7)

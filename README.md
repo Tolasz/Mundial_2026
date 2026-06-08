@@ -1,7 +1,7 @@
 # ⚽ Mundial Typer 2026
 
 Aplikacja do typowania dokładnych wyników meczów Mistrzostw Świata 2026 dla znajomych.
-Logowanie email/hasło, zamknięta rejestracja (kod zaproszenia), live ranking, dark mode.
+Logowanie email/hasło, rejestracja email/hasło, live ranking, dark mode.
 
 **Stack:** Next.js 15 · TypeScript · Tailwind CSS v4 · shadcn/ui · Supabase · Vercel
 

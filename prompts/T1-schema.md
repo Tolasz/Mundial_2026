@@ -21,7 +21,6 @@ Zadanie krok po kroku:
    - predictions (id uuid PK, user_id uuid FK profiles, match_id uuid FK matches,
      home_pick int, away_pick int, points_awarded int null, created_at, updated_at,
      UNIQUE(user_id, match_id), CHECK home_pick BETWEEN 0 AND 99, CHECK away_pick BETWEEN 0 AND 99)
-   - invite_codes (code text PK, used_by uuid null FK profiles, used_at timestamptz null, created_at)
    - settings (id int PK default 1 CHECK id=1 [singleton], championship_bonus_points int default 50,
      tournament_started bool default false, champion_locked_at timestamptz null)
 3. Dodaj funkcję recalc_match_points(p_match_id uuid): dla zakończonego meczu przelicza

@@ -22,8 +22,6 @@ Utwórz migrację supabase/migrations/0002_rls.sql z politykami:
   * DELETE: zabronione (lub tylko własne przed kickoffem — wybierz brak DELETE).
 - matches, teams:
   * SELECT: wszyscy zalogowani. Modyfikacja: tylko service_role/admin (brak polityk dla anon/user).
-- invite_codes:
-  * Brak dostępu dla anon/auth — obsługa wyłącznie przez Server Action z service_role.
 - settings:
   * SELECT: wszyscy zalogowani. UPDATE: tylko admin/service_role.
 

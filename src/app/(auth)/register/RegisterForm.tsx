@@ -15,7 +15,6 @@ const registerSchema = z.object({
     .string()
     .min(2, "Nick musi mieć co najmniej 2 znaki.")
     .max(24, "Nick może mieć maksymalnie 24 znaki."),
-  inviteCode: z.string().min(1, "Kod zaproszenia jest wymagany."),
 })
 
 type RegisterFormValues = z.infer<typeof registerSchema>
@@ -47,7 +46,7 @@ export default function RegisterForm() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold">⚽ Mundial Typer 2026</h1>
-          <p className="text-muted-foreground mt-1">Utwórz konto (wymagany kod zaproszenia)</p>
+          <p className="text-muted-foreground mt-1">Utwórz konto</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
@@ -99,23 +98,6 @@ export default function RegisterForm() {
             />
             {errors.nick && (
               <p className="text-sm text-destructive">{errors.nick.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-1">
-            <label htmlFor="inviteCode" className="text-sm font-medium">
-              Kod zaproszenia
-            </label>
-            <input
-              id="inviteCode"
-              type="text"
-              autoComplete="off"
-              {...register("inviteCode")}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30 disabled:opacity-50"
-              disabled={isPending}
-            />
-            {errors.inviteCode && (
-              <p className="text-sm text-destructive">{errors.inviteCode.message}</p>
             )}
           </div>
 

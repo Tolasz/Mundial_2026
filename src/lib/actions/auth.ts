@@ -7,30 +7,15 @@ interface SignUpValues {
   email: string
   password: string
   nick: string
-  inviteCode: string
 }
 
 export async function signUp(
   values: SignUpValues,
 ): Promise<{ success: false; error: string } | { success: true }> {
-  // invite_codes have no anon access (RLS) — must use service_role
+  // service_role bypasses RLS for nick pre-check and profile insert
   const serviceClient = await createServiceClient()
 
-  // 1. Verify invite code exists and is unused
-  const { data: invite } = await serviceClient
-    .from("invite_codes")
-    .select("code, used_by")
-    .eq("code", values.inviteCode)
-    .maybeSingle()
-
-  if (!invite) {
-    return { success: false, error: "Nieprawidłowy kod zaproszenia." }
-  }
-  if (invite.used_by !== null) {
-    return { success: false, error: "Ten kod zaproszenia został już wykorzystany." }
-  }
-
-  // 2. Pre-check nick uniqueness before creating auth user
+  // 1. Pre-check nick uniqueness before creating auth user
   const { data: existingNick } = await serviceClient
     .from("profiles")
     .select("nick")
@@ -41,7 +26,7 @@ export async function signUp(
     return { success: false, error: "Ten nick jest już zajęty." }
   }
 
-  // 3. Create auth user (anon SSR client handles cookie-based session)
+  // 2. Create auth user (anon SSR client handles cookie-based session)
   const authClient = await createClient()
   const { data: authData, error: signUpError } = await authClient.auth.signUp({
     email: values.email,
@@ -55,7 +40,7 @@ export async function signUp(
     return { success: false, error: signUpError?.message ?? "Błąd rejestracji." }
   }
 
-  // 4. Insert profile (service_role bypasses RLS to guarantee write)
+  // 3. Insert profile (service_role bypasses RLS to guarantee write)
   const { error: profileError } = await serviceClient.from("profiles").insert({
     id: authData.user.id,
     nick: values.nick,
@@ -70,12 +55,6 @@ export async function signUp(
           : "Błąd tworzenia profilu.",
     }
   }
-
-  // 5. Mark invite code as used
-  await serviceClient
-    .from("invite_codes")
-    .update({ used_by: authData.user.id, used_at: new Date().toISOString() })
-    .eq("code", values.inviteCode)
 
   redirect("/")
 }

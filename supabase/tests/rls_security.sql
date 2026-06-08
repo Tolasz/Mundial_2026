@@ -150,21 +150,6 @@ BEGIN
   END IF;
 
   -- --------------------------------------------------------
-  -- TEST 5: Brak dostępu do invite_codes (brak polityk SELECT)
-  -- --------------------------------------------------------
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE tablename = 'invite_codes'
-      AND schemaname = 'public'
-  ) THEN
-    RAISE NOTICE 'PASS TEST 5: Brak polityk RLS dla invite_codes (deny-all dla anon/auth)';
-    v_pass := v_pass + 1;
-  ELSE
-    RAISE WARNING 'FAIL TEST 5: Znaleziono polityki RLS dla invite_codes — powinno być deny-all!';
-    v_fail := v_fail + 1;
-  END IF;
-
-  -- --------------------------------------------------------
   -- Sprzątanie danych testowych
   -- --------------------------------------------------------
   DELETE FROM predictions WHERE user_id IN (v_user_a_id, v_user_b_id);

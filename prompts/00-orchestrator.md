@@ -23,7 +23,7 @@ ZASADY PRACY:
 5. Zasady gry (stałe): dokładny wynik = 3 pkt, trafiony rezultat W/R/P = 1 pkt, inaczej 0.
    Bonus za trafionego mistrza = 50 pkt. Mecze pucharowe liczone po 90 min.
    Mecz przełożony/nierozegrany (status=postponed) => points=null (typy bez punktów).
-   Rejestracja zamknięta na kod zaproszenia. Lock typu, gdy now() >= kickoff_at.
+   Rejestracja otwarta (email/hasło). Lock typu, gdy now() >= kickoff_at.
 6. Po skończeniu ticketu: uruchom `pnpm test` i `pnpm build`/typecheck; napraw błędy;
    zrób commit z message "T<ID>: <opis>". Zostaw repo w działającym stanie.
 7. Jakość: bez over-engineeringu. Tylko zakres ticketu + to, co konieczne do akceptacji.
@@ -44,7 +44,7 @@ DEFINITION OF DONE (każdy ticket):
 | T0-scaffold.md | Scaffold repo + tooling |
 | T1-schema.md | Supabase schema + migracje |
 | T2-rls.md | RLS policies |
-| T3-auth.md | Auth + rejestracja na kod |
+| T3-auth.md | Auth + rejestracja |
 | T4-app-shell.md | App shell + nawigacja |
 | T5-data-seed.md | Adapter danych + seed |
 | T6-group-predictions.md | Typowanie fazy grupowej |

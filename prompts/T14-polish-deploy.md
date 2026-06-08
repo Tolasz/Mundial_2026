@@ -17,7 +17,7 @@ Zadanie:
      FOOTBALL_API_KEY, CRON_SECRET).
    - Skonfiguruj Supabase (produkcyjna baza, migracje zastosowane, seed wykonany).
    - Włącz cron (vercel.json) i potwierdź, że sync działa na prod.
-4. Smoke test E2E na prod: rejestracja kodem -> typ meczu -> (symulacja) wynik/sync -> ranking.
+4. Smoke test E2E na prod: rejestracja -> typ meczu -> (symulacja) wynik/sync -> ranking.
 
 Kryteria akceptacji:
 - Brak crashy przy błędzie API; widoczne czytelne komunikaty.

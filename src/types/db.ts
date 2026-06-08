@@ -12,35 +12,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      invite_codes: {
-        Row: {
-          code: string
-          created_at: string
-          used_at: string | null
-          used_by: string | null
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          used_at?: string | null
-          used_by?: string | null
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          used_at?: string | null
-          used_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "invite_codes_used_by_fkey"
-            columns: ["used_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       matches: {
         Row: {
           away_score: number | null
@@ -279,7 +250,6 @@ export type Profile = Tables<"profiles">
 export type Team = Tables<"teams">
 export type Match = Tables<"matches">
 export type Prediction = Tables<"predictions">
-export type InviteCode = Tables<"invite_codes">
 export type Settings = Tables<"settings">
 export type LeaderboardRow = Database["public"]["Views"]["leaderboard"]["Row"]
 export type MatchStage = Enums<"match_stage">
