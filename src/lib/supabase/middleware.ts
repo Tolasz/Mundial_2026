@@ -48,9 +48,8 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/register/")
   const isApiRoute = pathname.startsWith("/api")
   // Routes that require authentication: (app)/* and (admin)/* groups
-  // Route groups don't affect URL paths, so we protect specific known paths
-  // and any path that is not an auth/API/public route.
-  const isPublicRoute = isAuthRoute || isApiRoute || pathname === "/"
+  // Route groups don't affect URL paths, so we protect specific known paths.
+  const isPublicRoute = isAuthRoute || isApiRoute
 
   // Authenticated users should not access login/register
   if (user && isAuthRoute) {
