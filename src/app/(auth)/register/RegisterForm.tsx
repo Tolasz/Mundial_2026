@@ -35,9 +35,11 @@ export default function RegisterForm() {
     setServerError(null)
     startTransition(async () => {
       const result = await signUp(values)
-      if (result && !result.success) {
-        setServerError(result.error)
+      if (result.success) {
+        window.location.assign("/predictions")
+        return
       }
+      setServerError(result.error)
     })
   }
 

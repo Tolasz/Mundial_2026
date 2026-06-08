@@ -56,13 +56,13 @@ export async function signUp(
     }
   }
 
-  redirect("/")
+  return { success: true }
 }
 
 export async function signIn(
   email: string,
   password: string,
-): Promise<{ success: false; error: string } | void> {
+): Promise<{ success: false; error: string } | { success: true }> {
   const supabase = await createClient()
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -71,7 +71,7 @@ export async function signIn(
     return { success: false, error: "Nieprawidłowy email lub hasło." }
   }
 
-  redirect("/")
+  return { success: true }
 }
 
 export async function signOut(): Promise<void> {

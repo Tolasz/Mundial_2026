@@ -31,9 +31,11 @@ export default function LoginForm() {
     setServerError(null)
     startTransition(async () => {
       const result = await signIn(values.email, values.password)
-      if (result && !result.success) {
-        setServerError(result.error)
+      if (result.success) {
+        window.location.assign("/predictions")
+        return
       }
+      setServerError(result.error)
     })
   }
 
