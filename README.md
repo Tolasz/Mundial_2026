@@ -69,3 +69,26 @@ supabase/
   migrations/                       # migracje SQL
 ```
 
+## Cron — synchronizacja wyników
+
+Endpoint `/api/cron/sync-results` jest wywoływany automatycznie przez Vercel co 15 minut
+(harmonogram w `vercel.json`). Pobiera wyniki z football-data.org, aktualizuje mecze
+i przelicza punkty graczy.
+
+### Konfiguracja CRON_SECRET w Vercel
+
+1. W panelu Vercel przejdź do **Settings → Environment Variables**.
+2. Dodaj zmienną `CRON_SECRET` z losową, trudną do odgadnięcia wartością
+   (np. wygenerowaną przez `openssl rand -hex 32`).
+3. Wykonaj redeploy, aby zmienna była dostępna w środowisku.
+
+Vercel automatycznie przekazuje `Authorization: Bearer <CRON_SECRET>` do endpointu
+cron. Żądania bez poprawnego sekretu otrzymują odpowiedź `401 Unauthorized`.
+
+### Ręczne wywołanie (lokalnie / testowanie)
+
+```bash
+curl -H "Authorization: Bearer <twój_CRON_SECRET>" \
+  http://localhost:3000/api/cron/sync-results
+```
+
