@@ -218,6 +218,31 @@ export type Database = {
         }
         Relationships: []
       }
+      player_points_history: {
+        Row: {
+          user_id: string | null
+          prediction_id: string | null
+          match_id: string | null
+          kickoff_at: string | null
+          stage: Database["public"]["Enums"]["match_stage"] | null
+          group: string | null
+          round_label: string | null
+          home_score: number | null
+          away_score: number | null
+          status: Database["public"]["Enums"]["match_status"] | null
+          home_team_name: string | null
+          home_team_short: string | null
+          home_team_flag: string | null
+          away_team_name: string | null
+          away_team_short: string | null
+          away_team_flag: string | null
+          home_pick: number | null
+          away_pick: number | null
+          points_awarded: number | null
+          cumulative_points: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       recalc_match_points: {
@@ -252,5 +277,6 @@ export type Match = Tables<"matches">
 export type Prediction = Tables<"predictions">
 export type Settings = Tables<"settings">
 export type LeaderboardRow = Database["public"]["Views"]["leaderboard"]["Row"]
+export type PlayerPointsHistoryRow = Database["public"]["Views"]["player_points_history"]["Row"]
 export type MatchStage = Enums<"match_stage">
 export type MatchStatus = Enums<"match_status">
