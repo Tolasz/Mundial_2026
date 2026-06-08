@@ -1,7 +1,7 @@
 "use server"
 
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceClient } from "@/lib/supabase/server"
 
 interface SignUpValues {
   email: string
@@ -9,27 +9,41 @@ interface SignUpValues {
   nick: string
   inviteCode: string
 }
-// chuj
-export async function signUp(values: SignUpValues): Promise<{ success: boolean; error: string } | { success: true }> {
-  const supabase = await createClient()
 
-  // Validate invite code
-  const { data: invite, error: inviteError } = await supabase
+export async function signUp(
+  values: SignUpValues,
+): Promise<{ success: false; error: string } | { success: true }> {
+  // invite_codes have no anon access (RLS) — must use service_role
+  const serviceClient = await createServiceClient()
+
+  // 1. Verify invite code exists and is unused
+  const { data: invite } = await serviceClient
     .from("invite_codes")
     .select("code, used_by")
     .eq("code", values.inviteCode)
-    .single()
+    .maybeSingle()
 
-  if (inviteError || !invite) {
+  if (!invite) {
     return { success: false, error: "Nieprawidłowy kod zaproszenia." }
   }
-
   if (invite.used_by !== null) {
     return { success: false, error: "Ten kod zaproszenia został już wykorzystany." }
   }
 
-  // Create auth user
-  const { data: authData, error: signUpError } = await supabase.auth.signUp({
+  // 2. Pre-check nick uniqueness before creating auth user
+  const { data: existingNick } = await serviceClient
+    .from("profiles")
+    .select("nick")
+    .eq("nick", values.nick)
+    .maybeSingle()
+
+  if (existingNick) {
+    return { success: false, error: "Ten nick jest już zajęty." }
+  }
+
+  // 3. Create auth user (anon SSR client handles cookie-based session)
+  const authClient = await createClient()
+  const { data: authData, error: signUpError } = await authClient.auth.signUp({
     email: values.email,
     password: values.password,
     options: {
@@ -41,18 +55,24 @@ export async function signUp(values: SignUpValues): Promise<{ success: boolean; 
     return { success: false, error: signUpError?.message ?? "Błąd rejestracji." }
   }
 
-  // Insert profile
-  const { error: profileError } = await supabase.from("profiles").insert({
+  // 4. Insert profile (service_role bypasses RLS to guarantee write)
+  const { error: profileError } = await serviceClient.from("profiles").insert({
     id: authData.user.id,
     nick: values.nick,
   })
 
   if (profileError) {
-    return { success: false, error: profileError.message }
+    return {
+      success: false,
+      error:
+        profileError.code === "23505"
+          ? "Ten nick jest już zajęty."
+          : "Błąd tworzenia profilu.",
+    }
   }
 
-  // Mark invite code as used
-  await supabase
+  // 5. Mark invite code as used
+  await serviceClient
     .from("invite_codes")
     .update({ used_by: authData.user.id, used_at: new Date().toISOString() })
     .eq("code", values.inviteCode)
@@ -63,13 +83,13 @@ export async function signUp(values: SignUpValues): Promise<{ success: boolean; 
 export async function signIn(
   email: string,
   password: string,
-): Promise<{ success: boolean; error: string } | void> {
+): Promise<{ success: false; error: string } | void> {
   const supabase = await createClient()
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
-    return { success: false, error: error.message }
+    return { success: false, error: "Nieprawidłowy email lub hasło." }
   }
 
   redirect("/")
