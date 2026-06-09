@@ -1,8 +1,11 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { toast } from "sonner"
+import { Lock, Trophy } from "lucide-react"
 import { saveChampion } from "@/lib/actions/champion"
 import { Button } from "@/components/ui/button"
+import { TeamFlag } from "@/components/team-flag"
 
 interface TeamInfo {
   id: string
@@ -28,34 +31,13 @@ interface ChampionPickerProps {
   finalFinished: boolean
 }
 
-function FlagOrPlaceholder({ flagUrl, name }: { flagUrl: string; name: string }) {
-  if (flagUrl && (flagUrl.startsWith("http://") || flagUrl.startsWith("https://"))) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={flagUrl}
-        alt={name}
-        className="w-8 h-5 object-cover rounded-sm shrink-0"
-      />
-    )
-  }
-  return (
-    <span
-      className="inline-flex items-center justify-center w-8 h-5 rounded-sm bg-muted text-[10px] font-bold shrink-0"
-      aria-label={name}
-    >
-      {name.slice(0, 2).toUpperCase()}
-    </span>
-  )
-}
-
 function getWinnerIds(final: FinalInfo): string[] {
   if (final.homeScore === null || final.awayScore === null) return []
   if (final.homeScore > final.awayScore)
     return final.homeTeamId ? [final.homeTeamId] : []
   if (final.awayScore > final.homeScore)
     return final.awayTeamId ? [final.awayTeamId] : []
-  // Draw after 90 min — both teams give bonus (consistent with leaderboard view)
+  // Draw after 90 min — both teams give bonus
   return [final.homeTeamId, final.awayTeamId].filter(Boolean) as string[]
 }
 
@@ -68,7 +50,6 @@ export function ChampionPicker({
   finalFinished,
 }: ChampionPickerProps) {
   const [selected, setSelected] = useState<string | null>(currentChampionId)
-  const [statusMsg, setStatusMsg] = useState<{ text: string; ok: boolean } | null>(null)
   const [isPending, startTransition] = useTransition()
 
   const winnerIds = finalFinished && final ? getWinnerIds(final) : []
@@ -89,13 +70,12 @@ export function ChampionPicker({
 
   function handleSave() {
     if (!selected) return
-    setStatusMsg(null)
     startTransition(async () => {
       const result = await saveChampion({ teamId: selected })
       if (result.success) {
-        setStatusMsg({ text: "Zapisano typ mistrza!", ok: true })
+        toast.success("Typ mistrza zapisany!")
       } else {
-        setStatusMsg({ text: result.error, ok: false })
+        toast.error(result.error)
       }
     })
   }
@@ -112,24 +92,33 @@ export function ChampionPicker({
         </p>
       </div>
 
-      {/* Status banners */}
+      {/* Locked banner */}
       {isLocked && (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:text-amber-400">
-          🔒 Wybór mistrza jest zablokowany — turniej już się rozpoczął.
+        <div
+          role="status"
+          className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400"
+        >
+          <Lock className="size-4 shrink-0" aria-hidden />
+          <span>Wybór mistrza jest zablokowany — turniej już się rozpoczął.</span>
         </div>
       )}
 
+      {/* Final result banner */}
       {finalFinished && (
         <div
-          className={`rounded-lg border px-4 py-3 text-sm ${
+          role="status"
+          className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-sm ${
             userHit
-              ? "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400"
+              ? "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400"
               : "border-muted bg-muted/30 text-muted-foreground"
           }`}
         >
-          {userHit
-            ? `🏆 Gratulacje! Trafiłeś mistrza turnieju. +${bonusPoints} pkt!`
-            : "Finał rozliczony. Nie udało się trafić mistrza."}
+          <Trophy className={`size-4 shrink-0 ${userHit ? "text-yellow-500" : ""}`} aria-hidden />
+          <span>
+            {userHit
+              ? `Gratulacje! Trafiłeś mistrza turnieju. +${bonusPoints} pkt!`
+              : "Finał rozliczony. Nie udało się trafić mistrza."}
+          </span>
         </div>
       )}
 
@@ -154,28 +143,35 @@ export function ChampionPicker({
                       key={team.id}
                       type="button"
                       disabled={isLocked || isPending}
+                      aria-pressed={isSelected}
                       onClick={() => {
                         if (!isLocked) {
                           setSelected(team.id)
-                          setStatusMsg(null)
                         }
                       }}
-                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-left transition-colors
-                        ${
-                          isSelected
-                            ? "border-primary bg-primary/10 font-medium"
-                            : "border-border hover:border-muted-foreground/40 hover:bg-muted/40"
-                        }
-                        ${isLocked ? "cursor-default opacity-75" : "cursor-pointer"}
-                        ${isWinner ? "ring-2 ring-yellow-400/60" : ""}
-                      `}
+                      className={[
+                        "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-left transition-colors",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-1",
+                        isSelected
+                          ? "border-primary bg-primary/10 font-medium"
+                          : "border-border hover:border-muted-foreground/40 hover:bg-muted/40",
+                        isLocked ? "cursor-default opacity-75" : "cursor-pointer",
+                        isWinner ? "ring-2 ring-yellow-400/60" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                     >
-                      <FlagOrPlaceholder flagUrl={team.flag_url} name={team.short_name} />
+                      <TeamFlag
+                        flagUrl={team.flag_url}
+                        name={team.short_name}
+                        size="sm"
+                      />
                       <span className="truncate">{team.name}</span>
                       {isWinner && (
-                        <span className="ml-auto shrink-0 text-yellow-500" title="Mistrz turnieju">
-                          🏆
-                        </span>
+                        <Trophy
+                          className="ml-auto size-3.5 shrink-0 text-yellow-500"
+                          aria-label="Mistrz turnieju"
+                        />
                       )}
                     </button>
                   )
@@ -192,21 +188,14 @@ export function ChampionPicker({
           <Button
             onClick={handleSave}
             disabled={!selected || !isDirty || isPending}
+            aria-busy={isPending}
           >
             {isPending ? "Zapisywanie…" : "Zapisz typ mistrza"}
           </Button>
           {currentChampionId && !isDirty && (
-            <span className="text-sm text-muted-foreground">Typ zapisany</span>
+            <span className="text-sm text-muted-foreground">Typ zapisany ✓</span>
           )}
         </div>
-      )}
-
-      {statusMsg && (
-        <p
-          className={`text-sm ${statusMsg.ok ? "text-green-500" : "text-destructive"}`}
-        >
-          {statusMsg.text}
-        </p>
       )}
     </div>
   )

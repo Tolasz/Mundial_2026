@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { type LeaderRow } from "@/lib/leaderboard/derive"
@@ -10,9 +11,10 @@ interface LeaderboardTableProps {
 export function LeaderboardTable({ rows }: LeaderboardTableProps) {
   if (rows.length === 0) {
     return (
-      <p className="py-6 text-center text-sm text-muted-foreground">
-        Brak graczy poza podium.
-      </p>
+      <div className="flex flex-col items-center gap-3 py-12 text-center">
+        <Users className="size-9 text-muted-foreground/30" aria-hidden />
+        <p className="text-sm text-muted-foreground">Brak graczy w rankingu.</p>
+      </div>
     )
   }
 

@@ -36,7 +36,7 @@ function makeRow(overrides: Partial<LeaderRow> & { userId: string; rank: number 
 describe("LeaderboardTable", () => {
   it("renders empty state when rows is empty", () => {
     render(<LeaderboardTable rows={[]} />)
-    expect(screen.getByText(/brak graczy poza podium/i)).toBeInTheDocument()
+    expect(screen.getByText(/brak graczy w rankingu/i)).toBeInTheDocument()
   })
 
   it("renders all rows", () => {

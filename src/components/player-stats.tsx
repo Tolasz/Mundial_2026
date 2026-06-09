@@ -1,5 +1,6 @@
 "use client"
 
+import { BarChart2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import type { PlayerStatsVM } from "@/lib/stats/player"
@@ -119,9 +120,12 @@ export function PlayerStats({ vm }: PlayerStatsProps) {
       )}
 
       {totalSettled === 0 && (
-        <p className="text-sm text-muted-foreground">
-          Brak rozliczonych meczów — statystyki pojawią się po pierwszym typowanym meczu.
-        </p>
+        <div className="flex flex-col items-center gap-3 py-8 text-center rounded-xl border border-dashed border-border">
+          <BarChart2 className="size-9 text-muted-foreground/30" aria-hidden />
+          <p className="text-sm text-muted-foreground">
+            Brak rozliczonych meczów — statystyki pojawią się po pierwszym typowanym meczu.
+          </p>
+        </div>
       )}
 
       {/* Points by stage */}

@@ -1,4 +1,5 @@
 import Link from "next/link"
+ import { CalendarX } from "lucide-react"
 import { TeamFlag } from "@/components/team-flag"
 import { countdownLabel } from "@/lib/dashboard/derive"
 import type { DashboardMatchVM } from "@/lib/dashboard/derive"
@@ -13,9 +14,10 @@ export function UpcomingMatches({ matches, now }: UpcomingMatchesProps) {
     return (
       <section>
         <h2 className="text-lg font-semibold mb-3">Najbliższe mecze</h2>
-        <p className="text-muted-foreground text-sm">
-          Brak nadchodzących meczów.
-        </p>
+        <div className="flex flex-col items-center gap-3 py-10 rounded-xl border border-dashed border-border text-center">
+          <CalendarX className="size-9 text-muted-foreground/30" aria-hidden />
+          <p className="text-sm text-muted-foreground">Brak nadchodzących meczów.</p>
+        </div>
       </section>
     )
   }
