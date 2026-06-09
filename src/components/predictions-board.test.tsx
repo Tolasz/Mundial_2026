@@ -92,7 +92,7 @@ describe("PredictionsBoard", () => {
   it("filtering by status 'Nietypowane' hides saved and locked matches", async () => {
     const user = userEvent.setup()
     renderBoard()
-    await user.click(screen.getByRole("tab", { name: "Nietypowane" }))
+    await user.click(screen.getByRole("button", { name: "Nietypowane" }))
     expect(screen.getByText("POL")).toBeInTheDocument()
     expect(screen.queryByText("FRA")).not.toBeInTheDocument()
     expect(screen.queryByText("ARG")).not.toBeInTheDocument()
@@ -101,7 +101,7 @@ describe("PredictionsBoard", () => {
   it("filtering by status 'Zapisane' shows only saved matches", async () => {
     const user = userEvent.setup()
     renderBoard()
-    await user.click(screen.getByRole("tab", { name: "Zapisane" }))
+    await user.click(screen.getByRole("button", { name: "Zapisane" }))
     expect(screen.queryByText("POL")).not.toBeInTheDocument()
     expect(screen.getByText("FRA")).toBeInTheDocument()
     expect(screen.queryByText("ARG")).not.toBeInTheDocument()
@@ -121,7 +121,7 @@ describe("PredictionsBoard", () => {
     renderBoard()
     // Filter to group B AND saved — no match satisfies both
     await user.click(screen.getByRole("button", { name: "B" }))
-    await user.click(screen.getByRole("tab", { name: "Zapisane" }))
+    await user.click(screen.getByRole("button", { name: "Zapisane" }))
     expect(screen.getByText("Brak meczów")).toBeInTheDocument()
   })
 
