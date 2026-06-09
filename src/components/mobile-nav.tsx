@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 interface NavLink {
   href: string
   label: string
+  exact?: boolean
 }
 
 interface MobileNavProps {
@@ -47,7 +48,7 @@ export function MobileNav({ links, nick }: MobileNavProps) {
                 onClick={() => setOpen(false)}
                 className={cn(
                   "px-3 py-3 text-base font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground",
-                  pathname.startsWith(link.href)
+                  (link.exact ? pathname === link.href : pathname.startsWith(link.href))
                     ? "bg-accent text-accent-foreground"
                     : "text-muted-foreground"
                 )}

@@ -7,9 +7,10 @@ import { MobileNav } from "@/components/mobile-nav"
 import { DesktopNav } from "@/components/desktop-nav"
 
 const NAV_LINKS = [
-  { href: "/predictions", label: "Typy" },
-  { href: "/leaderboard", label: "Ranking" },
-  { href: "/champion", label: "Mistrz" },
+  { href: "/", label: "Pulpit", exact: true },
+  { href: "/predictions", label: "Typy", exact: false },
+  { href: "/leaderboard", label: "Ranking", exact: false },
+  { href: "/champion", label: "Mistrz", exact: false },
 ] as const
 
 export async function AppHeader() {
@@ -35,7 +36,7 @@ export async function AppHeader() {
 
   const allLinks = [
     ...NAV_LINKS,
-    ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
+    ...(isAdmin ? [{ href: "/admin", label: "Admin", exact: false }] : []),
   ]
 
   return (
