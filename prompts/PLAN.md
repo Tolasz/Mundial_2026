@@ -18,7 +18,7 @@ Darmowy hosting: **Next.js + Supabase + Vercel**.
 | --- | --- |
 | Typ typowania | Dokładny wynik (np. 2:1) |
 | Punktacja | **3 pkt** za dokładny wynik, **1 pkt** za trafiony rezultat (W/R/P), 0 inaczej |
-| Bonus mistrza | **50 pkt** jeśli trafiony typ mistrza turnieju (jeden typ, na start) |
+| Bonus mistrza | **20 pkt** jeśli trafiony typ mistrza turnieju (jeden typ, na start) |
 | Zakres | Faza grupowa (72 mecze) + pucharowa (R32 → finał) |
 | Mecze pucharowe | Liczymy wynik **po 90 min** (dogrywka/karne ignorowane) |
 | Odblokowanie pucharu | Typy dostępne po wylosowaniu par (gdy znane obie drużyny) |
@@ -89,7 +89,7 @@ supabase/
   `external_id`, `round_label`
 - **predictions**: `id`, `user_id` (FK), `match_id` (FK), `home_pick` (int), `away_pick` (int),
   `points_awarded` (int null), `created_at`, `updated_at`. **UNIQUE(user_id, match_id)**
-- **settings** (singleton): `championship_bonus_points` (int default **50**),
+- **settings** (singleton): `championship_bonus_points` (int default **20**),
   `tournament_started` (bool), `champion_locked_at` (timestamptz null)
 - **Funkcje/widoki**: `leaderboard` (suma punktów + bonus per user), `recalc_match_points(match_id)`
 
@@ -174,10 +174,10 @@ supabase/
 - **Pliki:** rozszerzenie widoku meczu / komponent `OthersPredictions`.
 - **Akceptacja:** przed kickoffem ukryte (RLS), po — widoczne.
 
-### T11 — Typ mistrza + bonus 50 pkt  ·  dep: T3, T7
+### T11 — Typ mistrza + bonus 20 pkt  ·  dep: T3, T7
 - **Cel:** Wybór mistrza turnieju przed startem (`settings.champion_locked_at`); bonus po finale.
 - **Pliki:** `src/app/(app)/champion`, action `saveChampion`, logika bonusu w `recalc`/`leaderboard`.
-- **Akceptacja:** zmiana mistrza zablokowana po starcie turnieju; **+50 pkt** naliczone gdy mistrz trafiony.
+- **Akceptacja:** zmiana mistrza zablokowana po starcie turnieju; **+20 pkt** naliczone gdy mistrz trafiony.
 
 ### T12 — Faza pucharowa  ·  dep: T6, T8
 - **Cel:** Mecze pucharowe (r32→final) odblokowywane po ustaleniu par (`home/away != null`).

@@ -21,7 +21,7 @@ ZASADY PRACY:
 4. Bezpieczeństwo: autoryzacja w RLS ORAZ w UI. Punkty liczone WYŁĄCZNIE server-side.
    Sekrety tylko w env. Nigdy nie ufaj danym z klienta. Pilnuj OWASP Top 10.
 5. Zasady gry (stałe): dokładny wynik = 3 pkt, trafiony rezultat W/R/P = 1 pkt, inaczej 0.
-   Bonus za trafionego mistrza = 50 pkt. Mecze pucharowe liczone po 90 min.
+   Bonus za trafionego mistrza = 20 pkt. Mecze pucharowe liczone po 90 min.
    Mecz przełożony/nierozegrany (status=postponed) => points=null (typy bez punktów).
    Rejestracja otwarta (email/hasło). Lock typu, gdy now() >= kickoff_at.
 6. Po skończeniu ticketu: uruchom `pnpm test` i `pnpm build`/typecheck; napraw błędy;
@@ -52,7 +52,7 @@ DEFINITION OF DONE (każdy ticket):
 | T8-cron-sync.md | Cron sync wyników |
 | T9-leaderboard.md | Leaderboard + tabela graczy + historia |
 | T10-reveal.md | Reveal cudzych typów |
-| T11-champion.md | Typ mistrza + bonus 50 |
+| T11-champion.md | Typ mistrza + bonus 20 |
 | T12-knockout.md | Faza pucharowa |
 | T13-admin.md | Panel admina |
 | T14-polish-deploy.md | Polish + deploy |

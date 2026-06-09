@@ -66,7 +66,7 @@ CREATE TABLE invite_codes (
 
 CREATE TABLE settings (
   id                        int         PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-  championship_bonus_points int         NOT NULL DEFAULT 50,
+  championship_bonus_points int         NOT NULL DEFAULT 20,
   tournament_started        boolean     NOT NULL DEFAULT false,
   champion_locked_at        timestamptz NULL
 );
@@ -75,7 +75,7 @@ CREATE TABLE settings (
 -- REKORD DOMYŚLNY: settings
 -- ------------------------------------
 INSERT INTO settings (id, championship_bonus_points, tournament_started)
-VALUES (1, 50, false);
+VALUES (1, 20, false);
 
 -- ------------------------------------
 -- INDEKSY
