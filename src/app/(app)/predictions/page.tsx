@@ -18,10 +18,29 @@ interface MatchWithTeams {
   away_team: TeamRow
 }
 
+interface KnockoutMatch {
+  id: string
+  stage: string
+  round_label: string | null
+  kickoff_at: string
+  home_team: TeamRow | null
+  away_team: TeamRow | null
+}
+
 interface PredictionRow {
   match_id: string
   home_pick: number
   away_pick: number
+}
+
+const KNOCKOUT_STAGES = ["r32", "r16", "qf", "sf", "final"] as const
+
+const STAGE_LABELS: Record<string, string> = {
+  r32: "1/16 finału",
+  r16: "1/8 finału",
+  qf: "Ćwierćfinały",
+  sf: "Półfinały",
+  final: "Finał",
 }
 
 export default async function PredictionsPage() {
@@ -36,19 +55,31 @@ export default async function PredictionsPage() {
   const now = new Date()
 
   // Fetch all group stage matches with team info
-  const { data: matchesRaw, error: matchesError } = await supabase
-    .from("matches")
-    .select(
-      `id, group, kickoff_at,
-       home_team:teams!matches_home_team_id_fkey(id, name, short_name, flag_url),
-       away_team:teams!matches_away_team_id_fkey(id, name, short_name, flag_url)`,
-    )
-    .eq("stage", "group")
-    .not("home_team_id", "is", null)
-    .not("away_team_id", "is", null)
-    .order("kickoff_at", { ascending: true })
+  const [groupResult, knockoutResult] = await Promise.all([
+    supabase
+      .from("matches")
+      .select(
+        `id, group, kickoff_at,
+         home_team:teams!matches_home_team_id_fkey(id, name, short_name, flag_url),
+         away_team:teams!matches_away_team_id_fkey(id, name, short_name, flag_url)`,
+      )
+      .eq("stage", "group")
+      .not("home_team_id", "is", null)
+      .not("away_team_id", "is", null)
+      .order("kickoff_at", { ascending: true }),
 
-  if (matchesError) {
+    supabase
+      .from("matches")
+      .select(
+        `id, stage, round_label, kickoff_at,
+         home_team:teams!matches_home_team_id_fkey(id, name, short_name, flag_url),
+         away_team:teams!matches_away_team_id_fkey(id, name, short_name, flag_url)`,
+      )
+      .in("stage", ["r32", "r16", "qf", "sf", "final"])
+      .order("kickoff_at", { ascending: true }),
+  ])
+
+  if (groupResult.error) {
     return (
       <div>
         <h1 className="text-2xl font-bold mb-4">Typy — faza grupowa</h1>
@@ -59,33 +90,45 @@ export default async function PredictionsPage() {
     )
   }
 
-  const matches = (matchesRaw ?? []) as unknown as MatchWithTeams[]
+  const matches = (groupResult.data ?? []) as unknown as MatchWithTeams[]
+  const knockoutMatches = (knockoutResult.data ?? []) as unknown as KnockoutMatch[]
 
-  // Fetch user predictions for group stage matches
-  const matchIds = matches.map((m) => m.id)
+  // IDs of knockout matches where both teams are known (typeable)
+  const knockoutPlayableIds = knockoutMatches
+    .filter((m) => m.home_team && m.away_team)
+    .map((m) => m.id)
+
+  // Fetch user predictions for all typeable matches in one query
+  const groupMatchIds = matches.map((m) => m.id)
+  const allTypedIds = [...groupMatchIds, ...knockoutPlayableIds]
   let predictions: PredictionRow[] = []
-  if (matchIds.length > 0) {
+  if (allTypedIds.length > 0) {
     const { data: predsData } = await supabase
       .from("predictions")
       .select("match_id, home_pick, away_pick")
       .eq("user_id", user.id)
-      .in("match_id", matchIds)
+      .in("match_id", allTypedIds)
 
     predictions = predsData ?? []
   }
 
-  const predictionMap = new Map<
-    string,
-    { homePick: number; awayPick: number }
-  >(predictions.map((p) => [p.match_id, { homePick: p.home_pick, awayPick: p.away_pick }]))
+  const predictionMap = new Map<string, { homePick: number; awayPick: number }>(
+    predictions.map((p) => [p.match_id, { homePick: p.home_pick, awayPick: p.away_pick }]),
+  )
 
-  const filledCount = predictions.length
-  const totalCount = matches.length
+  const groupFilledCount = groupMatchIds.filter((id) => predictionMap.has(id)).length
+  const knockoutFilledCount = knockoutPlayableIds.filter((id) => predictionMap.has(id)).length
+  const filledCount = groupFilledCount + knockoutFilledCount
+  const totalCount = matches.length + knockoutPlayableIds.length
 
-  // Fetch others' predictions for locked matches (RLS enforces post-kickoff visibility)
-  const lockedMatchIds = matches
+  // Locked matches for others' predictions visibility (RLS enforces post-kickoff)
+  const lockedGroupIds = matches
     .filter((m) => now >= new Date(m.kickoff_at))
     .map((m) => m.id)
+  const lockedKnockoutIds = knockoutMatches
+    .filter((m) => m.home_team && m.away_team && now >= new Date(m.kickoff_at))
+    .map((m) => m.id)
+  const allLockedIds = [...lockedGroupIds, ...lockedKnockoutIds]
 
   type OtherPredRow = {
     match_id: string
@@ -99,11 +142,11 @@ export default async function PredictionsPage() {
     { nick: string; homePick: number; awayPick: number; pointsAwarded: number | null }[]
   >()
 
-  if (lockedMatchIds.length > 0) {
+  if (allLockedIds.length > 0) {
     const { data: otherPreds } = await supabase
       .from("predictions")
       .select("match_id, home_pick, away_pick, points_awarded, profiles(nick)")
-      .in("match_id", lockedMatchIds)
+      .in("match_id", allLockedIds)
       .neq("user_id", user.id)
       .order("match_id")
 
@@ -127,14 +170,19 @@ export default async function PredictionsPage() {
     if (!groupsMap.has(g)) groupsMap.set(g, [])
     groupsMap.get(g)!.push(match)
   }
-
-  // Sort group keys alphabetically
   const sortedGroups = [...groupsMap.keys()].sort()
+
+  // Group knockout matches by stage
+  const knockoutByStage = new Map<string, KnockoutMatch[]>()
+  for (const match of knockoutMatches) {
+    if (!knockoutByStage.has(match.stage)) knockoutByStage.set(match.stage, [])
+    knockoutByStage.get(match.stage)!.push(match)
+  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Typy — faza grupowa</h1>
+        <h1 className="text-2xl font-bold">Typy meczów</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Typy można zmieniać do momentu startu meczu.
         </p>
@@ -152,53 +200,142 @@ export default async function PredictionsPage() {
           <div
             className="h-full rounded-full bg-primary transition-all"
             style={{
-              width:
-                totalCount > 0
-                  ? `${Math.round((filledCount / totalCount) * 100)}%`
-                  : "0%",
+              width: totalCount > 0 ? `${Math.round((filledCount / totalCount) * 100)}%` : "0%",
             }}
           />
         </div>
       </div>
 
-      {matches.length === 0 ? (
-        <p className="text-muted-foreground">
-          Mecze fazy grupowej nie zostały jeszcze załadowane.
-        </p>
-      ) : (
-        sortedGroups.map((groupLetter) => {
-          const groupMatches = groupsMap.get(groupLetter)!
-          return (
-            <section key={groupLetter}>
-              <h2 className="text-lg font-semibold mb-2">
-                Grupa {groupLetter}
-              </h2>
-              <div className="space-y-2">
-                {groupMatches.map((match) => {
-                  const isLocked = now >= new Date(match.kickoff_at)
-                  return (
-                    <div key={match.id}>
-                      <MatchPredictionCard
-                        matchId={match.id}
-                        homeTeam={match.home_team}
-                        awayTeam={match.away_team}
-                        kickoffAt={match.kickoff_at}
-                        prediction={predictionMap.get(match.id) ?? null}
-                        isLocked={isLocked}
-                      />
-                      {isLocked && (
-                        <OthersPredictions
-                          predictions={otherPredsMap.get(match.id) ?? []}
+      {/* Group stage */}
+      <div className="space-y-6">
+        <h2 className="text-xl font-semibold">Faza grupowa</h2>
+        {matches.length === 0 ? (
+          <p className="text-muted-foreground">
+            Mecze fazy grupowej nie zostały jeszcze załadowane.
+          </p>
+        ) : (
+          sortedGroups.map((groupLetter) => {
+            const groupMatches = groupsMap.get(groupLetter)!
+            return (
+              <section key={groupLetter}>
+                <h3 className="text-base font-semibold mb-2 text-muted-foreground">
+                  Grupa {groupLetter}
+                </h3>
+                <div className="space-y-2">
+                  {groupMatches.map((match) => {
+                    const isLocked = now >= new Date(match.kickoff_at)
+                    return (
+                      <div key={match.id}>
+                        <MatchPredictionCard
+                          matchId={match.id}
+                          homeTeam={match.home_team}
+                          awayTeam={match.away_team}
+                          kickoffAt={match.kickoff_at}
+                          prediction={predictionMap.get(match.id) ?? null}
+                          isLocked={isLocked}
                         />
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </section>
-          )
-        })
+                        {isLocked && (
+                          <OthersPredictions
+                            predictions={otherPredsMap.get(match.id) ?? []}
+                          />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            )
+          })
+        )}
+      </div>
+
+      {/* Knockout stages */}
+      {knockoutMatches.length > 0 && (
+        <div className="space-y-6 pt-4 border-t">
+          <div>
+            <h2 className="text-xl font-semibold">Faza pucharowa</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Typowanie dostępne po ustaleniu par. Mecze rozliczane po 90 min.
+            </p>
+          </div>
+          {KNOCKOUT_STAGES.map((stage) => {
+            const stageMatches = knockoutByStage.get(stage)
+            if (!stageMatches?.length) return null
+            return (
+              <section key={stage}>
+                <h3 className="text-base font-semibold mb-2 text-muted-foreground">
+                  {STAGE_LABELS[stage]}
+                </h3>
+                <div className="space-y-2">
+                  {stageMatches.map((match) => {
+                    const isPending = !match.home_team || !match.away_team
+                    const isLocked = !isPending && now >= new Date(match.kickoff_at)
+
+                    if (isPending) {
+                      return (
+                        <KnockoutPendingCard
+                          key={match.id}
+                          kickoffAt={match.kickoff_at}
+                          roundLabel={match.round_label}
+                        />
+                      )
+                    }
+
+                    return (
+                      <div key={match.id}>
+                        <MatchPredictionCard
+                          matchId={match.id}
+                          homeTeam={match.home_team!}
+                          awayTeam={match.away_team!}
+                          kickoffAt={match.kickoff_at}
+                          prediction={predictionMap.get(match.id) ?? null}
+                          isLocked={isLocked}
+                        />
+                        {isLocked && (
+                          <OthersPredictions
+                            predictions={otherPredsMap.get(match.id) ?? []}
+                          />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            )
+          })}
+        </div>
       )}
+    </div>
+  )
+}
+
+function KnockoutPendingCard({
+  kickoffAt,
+  roundLabel,
+}: {
+  kickoffAt: string
+  roundLabel: string | null
+}) {
+  const kickoff = new Date(kickoffAt)
+  const dateStr = kickoff.toLocaleDateString("pl-PL", {
+    day: "2-digit",
+    month: "2-digit",
+    weekday: "short",
+  })
+  const timeStr = kickoff.toLocaleTimeString("pl-PL", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+
+  return (
+    <div className="rounded-lg border bg-card/50 p-3 flex items-center justify-between opacity-60">
+      <span className="text-sm text-muted-foreground">
+        {roundLabel ?? "Mecz pucharowy"}
+      </span>
+      <span className="text-xs italic text-muted-foreground">Oczekuje na pary</span>
+      <span className="text-xs text-muted-foreground whitespace-nowrap">
+        {dateStr} {timeStr}
+      </span>
     </div>
   )
 }
