@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { MatchPredictionCard } from "@/components/match-prediction-card"
+import { OthersPredictions } from "@/components/others-predictions"
 
 interface TeamRow {
   id: string
@@ -81,6 +82,44 @@ export default async function PredictionsPage() {
   const filledCount = predictions.length
   const totalCount = matches.length
 
+  // Fetch others' predictions for locked matches (RLS enforces post-kickoff visibility)
+  const lockedMatchIds = matches
+    .filter((m) => now >= new Date(m.kickoff_at))
+    .map((m) => m.id)
+
+  type OtherPredRow = {
+    match_id: string
+    home_pick: number
+    away_pick: number
+    points_awarded: number | null
+    profiles: { nick: string } | null
+  }
+  const otherPredsMap = new Map<
+    string,
+    { nick: string; homePick: number; awayPick: number; pointsAwarded: number | null }[]
+  >()
+
+  if (lockedMatchIds.length > 0) {
+    const { data: otherPreds } = await supabase
+      .from("predictions")
+      .select("match_id, home_pick, away_pick, points_awarded, profiles(nick)")
+      .in("match_id", lockedMatchIds)
+      .neq("user_id", user.id)
+      .order("match_id")
+
+    for (const row of (otherPreds ?? []) as unknown as OtherPredRow[]) {
+      const nick = row.profiles?.nick ?? "—"
+      const entry = {
+        nick,
+        homePick: row.home_pick,
+        awayPick: row.away_pick,
+        pointsAwarded: row.points_awarded,
+      }
+      if (!otherPredsMap.has(row.match_id)) otherPredsMap.set(row.match_id, [])
+      otherPredsMap.get(row.match_id)!.push(entry)
+    }
+  }
+
   // Group matches by group letter (A–L)
   const groupsMap = new Map<string, MatchWithTeams[]>()
   for (const match of matches) {
@@ -135,17 +174,26 @@ export default async function PredictionsPage() {
                 Grupa {groupLetter}
               </h2>
               <div className="space-y-2">
-                {groupMatches.map((match) => (
-                  <MatchPredictionCard
-                    key={match.id}
-                    matchId={match.id}
-                    homeTeam={match.home_team}
-                    awayTeam={match.away_team}
-                    kickoffAt={match.kickoff_at}
-                    prediction={predictionMap.get(match.id) ?? null}
-                    isLocked={now >= new Date(match.kickoff_at)}
-                  />
-                ))}
+                {groupMatches.map((match) => {
+                  const isLocked = now >= new Date(match.kickoff_at)
+                  return (
+                    <div key={match.id}>
+                      <MatchPredictionCard
+                        matchId={match.id}
+                        homeTeam={match.home_team}
+                        awayTeam={match.away_team}
+                        kickoffAt={match.kickoff_at}
+                        prediction={predictionMap.get(match.id) ?? null}
+                        isLocked={isLocked}
+                      />
+                      {isLocked && (
+                        <OthersPredictions
+                          predictions={otherPredsMap.get(match.id) ?? []}
+                        />
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </section>
           )
