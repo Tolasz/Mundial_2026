@@ -44,6 +44,8 @@ export async function updateSession(request: NextRequest) {
   const isAuthRoute =
     pathname === "/login" ||
     pathname === "/register" ||
+    pathname === "/forgot-password" ||
+    pathname === "/reset-password" ||
     pathname.startsWith("/login/") ||
     pathname.startsWith("/register/")
   const isApiRoute = pathname.startsWith("/api")

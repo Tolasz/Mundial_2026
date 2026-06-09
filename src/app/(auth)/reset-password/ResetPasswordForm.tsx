@@ -4,35 +4,41 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useState, useTransition } from "react"
-import Link from "next/link"
-import { signIn } from "@/lib/actions/auth"
+import { useRouter } from "next/navigation"
+import { updatePassword } from "@/lib/actions/auth"
 import { Button } from "@/components/ui/button"
 
-const loginSchema = z.object({
-  email: z.string().email("Podaj prawidłowy adres email."),
-  password: z.string().min(1, "Podaj hasło."),
-})
+const schema = z
+  .object({
+    password: z.string().min(6, "Hasło musi mieć co najmniej 6 znaków."),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Hasła nie są identyczne.",
+    path: ["confirmPassword"],
+  })
 
-type LoginFormValues = z.infer<typeof loginSchema>
+type FormValues = z.infer<typeof schema>
 
-export default function LoginForm() {
+export default function ResetPasswordForm() {
   const [serverError, setServerError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
   })
 
-  function onSubmit(values: LoginFormValues) {
+  function onSubmit(values: FormValues) {
     setServerError(null)
     startTransition(async () => {
-      const result = await signIn(values.email, values.password)
+      const result = await updatePassword(values.password)
       if (result.success) {
-        window.location.assign("/predictions")
+        router.push("/predictions")
         return
       }
       setServerError(result.error)
@@ -44,49 +50,41 @@ export default function LoginForm() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold">⚽ Mundial Typer 2026</h1>
-          <p className="text-muted-foreground mt-1">Zaloguj się do swojego konta</p>
+          <p className="text-muted-foreground mt-1">Ustaw nowe hasło</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div className="space-y-1">
-            <label htmlFor="email" className="text-sm font-medium">
-              Email
+            <label htmlFor="password" className="text-sm font-medium">
+              Nowe hasło
             </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              {...register("email")}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30 disabled:opacity-50"
-              disabled={isPending}
-            />
-            {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <label htmlFor="password" className="text-sm font-medium">
-                Hasło
-              </label>
-              <Link
-                href="/forgot-password"
-                className="text-xs text-muted-foreground underline-offset-4 hover:underline"
-              >
-                Nie pamiętasz hasła?
-              </Link>
-            </div>
             <input
               id="password"
               type="password"
-              autoComplete="current-password"
+              autoComplete="new-password"
               {...register("password")}
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30 disabled:opacity-50"
               disabled={isPending}
             />
             {errors.password && (
               <p className="text-sm text-destructive">{errors.password.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor="confirmPassword" className="text-sm font-medium">
+              Powtórz hasło
+            </label>
+            <input
+              id="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              {...register("confirmPassword")}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30 disabled:opacity-50"
+              disabled={isPending}
+            />
+            {errors.confirmPassword && (
+              <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
             )}
           </div>
 
@@ -97,16 +95,9 @@ export default function LoginForm() {
           )}
 
           <Button type="submit" className="w-full" size="lg" disabled={isPending}>
-            {isPending ? "Logowanie…" : "Zaloguj się"}
+            {isPending ? "Zapisywanie…" : "Zapisz nowe hasło"}
           </Button>
         </form>
-
-        <p className="text-center text-sm text-muted-foreground">
-          Nie masz konta?{" "}
-          <Link href="/register" className="text-primary underline-offset-4 hover:underline">
-            Zarejestruj się
-          </Link>
-        </p>
       </div>
     </div>
   )

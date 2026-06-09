@@ -80,3 +80,33 @@ export async function signOut(): Promise<void> {
   await supabase.auth.signOut()
   redirect("/login")
 }
+
+export async function requestPasswordReset(
+  email: string,
+): Promise<{ success: false; error: string } | { success: true }> {
+  const supabase = await createClient()
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://mundial-2026-lemon.vercel.app"}/api/auth/callback?next=/reset-password`,
+  })
+
+  if (error) {
+    return { success: false, error: "Nie udało się wysłać emaila. Spróbuj ponownie." }
+  }
+
+  return { success: true }
+}
+
+export async function updatePassword(
+  password: string,
+): Promise<{ success: false; error: string } | { success: true }> {
+  const supabase = await createClient()
+
+  const { error } = await supabase.auth.updateUser({ password })
+
+  if (error) {
+    return { success: false, error: "Nie udało się zmienić hasła. Spróbuj ponownie." }
+  }
+
+  return { success: true }
+}
