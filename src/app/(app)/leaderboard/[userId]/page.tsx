@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect, notFound } from "next/navigation"
 import Link from "next/link"
+import { buildStatsVM } from "@/lib/stats/player"
+import { PlayerStats } from "@/components/player-stats"
 
 interface PageProps {
   params: Promise<{ userId: string }>
@@ -43,6 +45,8 @@ export default async function PlayerHistoryPage({ params }: PageProps) {
   const championBonus = lbRow?.champion_bonus ?? 0
   const totalPoints = lbRow?.total_points ?? 0
 
+  const statsVM = buildStatsVM(history, lbRow ?? null)
+
   const isOwnProfile = user.id === userId
 
   return (
@@ -68,6 +72,8 @@ export default async function PlayerHistoryPage({ params }: PageProps) {
           <span className="font-semibold text-foreground">{totalPoints} pkt</span>
         </p>
       </div>
+
+      <PlayerStats vm={statsVM} />
 
       {history.length === 0 && championBonus === 0 && (
         <p className="text-muted-foreground py-4">
