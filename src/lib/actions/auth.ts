@@ -91,7 +91,7 @@ export async function requestPasswordReset(
   })
 
   if (error) {
-    return { success: false, error: "Nie udało się wysłać emaila. Spróbuj ponownie." }
+    return { success: false, error: error.message }
   }
 
   return { success: true }
