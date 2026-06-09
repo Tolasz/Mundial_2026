@@ -50,10 +50,7 @@ export async function signUp(
   if (profileError) {
     return {
       success: false,
-      error:
-        profileError.code === "23505"
-          ? "Ten nick jest już zajęty."
-          : "Błąd tworzenia profilu.",
+      error: `[${profileError.code}] ${profileError.message}`,
     }
   }
 
