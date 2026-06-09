@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef } from "react"
-import { Search, ArrowUp, ArrowDown } from "lucide-react"
+import { Search, ArrowUp, ArrowDown, LayoutList } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -56,11 +56,11 @@ export function PredictionsToolbar({
               onClick={() => onFilterChange({ ...filter, group: "all" })}
               aria-pressed={filter.group === "all"}
               className={cn(
-                "px-2.5 py-1 rounded-md text-xs font-medium transition-colors",
+                "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                 filter.group === "all"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:text-foreground",
+                  ? "bg-primary text-primary-foreground border border-transparent"
+                  : "bg-background text-foreground border border-border hover:bg-muted",
               )}
             >
               Wszystkie
@@ -72,11 +72,11 @@ export function PredictionsToolbar({
                 onClick={() => onFilterChange({ ...filter, group: g })}
                 aria-pressed={filter.group === g}
                 className={cn(
-                  "px-2.5 py-1 rounded-md text-xs font-medium transition-colors",
+                  "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                   filter.group === g
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:text-foreground",
+                    ? "bg-primary text-primary-foreground border border-transparent"
+                    : "bg-background text-foreground border border-border hover:bg-muted",
                 )}
               >
                 {g}
@@ -122,20 +122,27 @@ export function PredictionsToolbar({
             />
           </div>
 
-          {/* Sort toggle */}
+          {/* Sort toggle — cycles: grouped → asc → desc → grouped */}
           <Button
             variant="outline"
             size="default"
             type="button"
-            onClick={() => onSortDirChange(sortDir === "asc" ? "desc" : "asc")}
+            onClick={() => {
+              const next = sortDir === "grouped" ? "asc" : sortDir === "asc" ? "desc" : "grouped"
+              onSortDirChange(next)
+            }}
             aria-label={
-              sortDir === "asc"
-                ? "Sortuj: najnowsze pierwsze"
-                : "Sortuj: najstarsze pierwsze"
+              sortDir === "grouped"
+                ? "Sortuj po dacie rosnąco"
+                : sortDir === "asc"
+                  ? "Sortuj po dacie malejąco"
+                  : "Widok grupowy"
             }
             className="shrink-0"
           >
-            {sortDir === "asc" ? (
+            {sortDir === "grouped" ? (
+              <LayoutList className="size-4" aria-hidden />
+            ) : sortDir === "asc" ? (
               <ArrowUp className="size-4" aria-hidden />
             ) : (
               <ArrowDown className="size-4" aria-hidden />

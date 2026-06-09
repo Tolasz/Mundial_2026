@@ -41,7 +41,7 @@ export function PredictionsBoard({
     status: "all",
     query: "",
   })
-  const [sortDir, setSortDir] = useState<SortDir>("asc")
+  const [sortDir, setSortDir] = useState<SortDir>("grouped")
 
   const filledCount = matches.filter((m) => m.predictionStatus !== "empty").length
   const filtered = sortMatches(filterMatches(matches, filter), sortDir)
@@ -139,8 +139,25 @@ export function PredictionsBoard({
         </div>
       )}
 
+      {/* Flat date view (sortDir asc/desc) */}
+      {!isEmpty && sortDir !== "grouped" && (
+        <div className="space-y-2">
+          {filtered.map((m) => (
+            <div key={m.id}>
+              <MatchPredictionCard match={m} />
+              {m.isLocked && m.otherPredictions.length > 0 && (
+                <OthersPredictions predictions={m.otherPredictions} />
+              )}
+            </div>
+          ))}
+          {pendingKnockoutMatches.map((m) => (
+            <KnockoutPendingCard key={m.id} match={m} />
+          ))}
+        </div>
+      )}
+
       {/* Group stage */}
-      {hasGroupSection && (
+      {hasGroupSection && sortDir === "grouped" && (
         <div className="space-y-6">
           <h2 className="text-lg font-semibold">Faza grupowa</h2>
           {sortedGroupKeys.map((g) => (
@@ -164,7 +181,7 @@ export function PredictionsBoard({
       )}
 
       {/* Knockout stages */}
-      {hasKnockoutSection && (
+      {hasKnockoutSection && sortDir === "grouped" && (
         <div className="space-y-6 pt-4 border-t">
           <div>
             <h2 className="text-lg font-semibold">Faza pucharowa</h2>

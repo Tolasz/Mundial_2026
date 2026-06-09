@@ -13,7 +13,7 @@ export interface OtherPrediction {
 }
 
 export type PredictionStatus = "empty" | "saved" | "locked"
-export type SortDir = "asc" | "desc"
+export type SortDir = "asc" | "desc" | "grouped"
 export type StatusFilter = "all" | PredictionStatus
 
 export interface FilterState {
@@ -74,8 +74,10 @@ export function filterMatches(
   })
 }
 
-/** Stable sort by kickoffAt. Returns a new array (does not mutate input). */
+/** Stable sort by kickoffAt. Returns a new array (does not mutate input).
+ * When dir is "grouped", the original order is preserved (grouping is done by the board). */
 export function sortMatches(matches: MatchVM[], dir: SortDir): MatchVM[] {
+  if (dir === "grouped") return [...matches]
   return [...matches].sort((a, b) => {
     const diff =
       new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime()

@@ -125,18 +125,28 @@ describe("PredictionsBoard", () => {
     expect(screen.getByText("Brak meczów")).toBeInTheDocument()
   })
 
-  it("sort toggle reverses order within group sections", async () => {
+  it("sort button switches to flat chronological list (no group sections)", async () => {
     const user = userEvent.setup()
     renderBoard()
-    // In Grupa A, ascending: POL (Jun 10) before FRA (Jun 11)
-    const sectionA = screen.getByRole("region", { name: "Grupa A" })
-    const getFirstShortName = () =>
-      sectionA.querySelectorAll("[aria-label^='Bramki ']")[0].getAttribute("aria-label")
-    const firstBefore = getFirstShortName()
-    await user.click(screen.getByRole("button", { name: /Sortuj/ }))
-    const firstAfter = getFirstShortName()
-    // After toggling, the order should change (France's input appears first)
-    expect(firstBefore).not.toBe(firstAfter)
+    // Default: grouped view — group sections exist
+    expect(screen.getByRole("region", { name: "Grupa A" })).toBeInTheDocument()
+    expect(screen.getByRole("region", { name: "Grupa B" })).toBeInTheDocument()
+
+    // Click once → asc flat list, group sections disappear
+    await user.click(screen.getByRole("button", { name: /Sortuj po dacie/ }))
+    expect(screen.queryByRole("region", { name: "Grupa A" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("region", { name: "Grupa B" })).not.toBeInTheDocument()
+    // All matches still visible in chronological order
+    const inputs = screen.getAllByRole("spinbutton")
+    expect(inputs.length).toBeGreaterThan(0)
+
+    // Click again → desc (reversed), still flat
+    await user.click(screen.getByRole("button", { name: /Sortuj po dacie/ }))
+    expect(screen.queryByRole("region", { name: "Grupa A" })).not.toBeInTheDocument()
+
+    // Click again → back to grouped view
+    await user.click(screen.getByRole("button", { name: /Widok grupowy/ }))
+    expect(screen.getByRole("region", { name: "Grupa A" })).toBeInTheDocument()
   })
 
   it("shows progress counter", () => {
