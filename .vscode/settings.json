@@ -20,5 +20,15 @@
   ],
   "[typescript]": {
     "editor.defaultFormatter": "denoland.vscode-deno"
+  },
+  "chat.tools.terminal.autoApprove": {
+    "/^git add src/lib/actions/champion\\.ts src/app/\\(app\\)/champion/page\\.tsx src/app/\\(app\\)/champion/ChampionPicker\\.tsx ; git commit -m \"T11: typ mistrza \\+ bonus 50\"$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^git add -A ; git commit -m \"T11: typ mistrza \\+ bonus 50\"$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
   }
 }
