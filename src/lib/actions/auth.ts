@@ -33,6 +33,7 @@ export async function signUp(
     password: values.password,
     options: {
       data: { nick: values.nick },
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/login`,
     },
   })
 
