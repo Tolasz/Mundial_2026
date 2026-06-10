@@ -5,9 +5,12 @@ import { WelcomeHero } from "@/components/dashboard/WelcomeHero"
 import { UpcomingMatches } from "@/components/dashboard/UpcomingMatches"
 import { MissingPredictionsAlert } from "@/components/dashboard/MissingPredictionsAlert"
 import { QuickLinks } from "@/components/dashboard/QuickLinks"
+import { GroupStandings } from "@/components/dashboard/GroupStandings"
 import { upcomingMatches, missingPredictions } from "@/lib/dashboard/derive"
 import type { DashboardMatchVM, DashboardTeamVM } from "@/lib/dashboard/derive"
 import { rankRows } from "@/lib/leaderboard/derive"
+import { computeGroupStandings } from "@/lib/groups/derive"
+import type { GroupTeamVM, GroupMatchVM } from "@/lib/groups/derive"
 
 interface TeamRow {
   id: string
@@ -22,8 +25,19 @@ interface RawMatch {
   stage: string
   group: string | null
   round_label: string | null
+  home_score: number | null
+  away_score: number | null
+  status: string
   home_team: TeamRow | null
   away_team: TeamRow | null
+}
+
+interface RawGroupTeam {
+  id: string
+  name: string
+  short_name: string
+  flag_url: string
+  group: string | null
 }
 
 function toTeamVM(row: TeamRow): DashboardTeamVM {
@@ -46,12 +60,17 @@ export default async function HomePage() {
 
   const now = new Date()
 
-  const [matchesResult, predictionsResult, profileResult, leaderboardResult] =
-    await Promise.all([
+  const [
+    matchesResult,
+    predictionsResult,
+    profileResult,
+    leaderboardResult,
+    teamsResult,
+  ] = await Promise.all([
       supabase
         .from("matches")
         .select(
-          `id, kickoff_at, stage, group, round_label,
+          `id, kickoff_at, stage, group, round_label, home_score, away_score, status,
            home_team:teams!matches_home_team_id_fkey(id, name, short_name, flag_url),
            away_team:teams!matches_away_team_id_fkey(id, name, short_name, flag_url)`,
         )
@@ -75,6 +94,11 @@ export default async function HomePage() {
         )
         .order("total_points", { ascending: false })
         .order("exact_hits", { ascending: false }),
+
+      supabase
+        .from("teams")
+        .select("id, name, short_name, flag_url, group")
+        .not("group", "is", null),
     ])
 
   const nick =
@@ -99,6 +123,32 @@ export default async function HomePage() {
   const upcoming = upcomingMatches(allMatches, now, 6)
   const missing = missingPredictions(allMatches, userPredictions, now)
 
+  // Group standings derived from finished group-stage matches.
+  const groupTeams: GroupTeamVM[] = (
+    (teamsResult.data as RawGroupTeam[] | null) ?? []
+  ).map((t) => ({
+    id: t.id,
+    name: t.name,
+    shortName: t.short_name,
+    flagUrl: t.flag_url,
+    group: t.group,
+  }))
+
+  const groupMatches: GroupMatchVM[] = (
+    (matchesResult.data as RawMatch[] | null) ?? []
+  )
+    .filter((m) => m.stage === "group")
+    .map((m) => ({
+      group: m.group,
+      status: m.status,
+      homeTeamId: m.home_team?.id ?? null,
+      awayTeamId: m.away_team?.id ?? null,
+      homeScore: m.home_score,
+      awayScore: m.away_score,
+    }))
+
+  const groupStandings = computeGroupStandings(groupTeams, groupMatches)
+
   // Derive rank + points from leaderboard rows
   const { podium, rest } = rankRows(leaderboardResult.data ?? [], user.id)
   const allRanked = [...podium, ...rest]
@@ -114,6 +164,7 @@ export default async function HomePage() {
         <MissingPredictionsAlert count={missing.length} />
         <UpcomingMatches matches={upcoming} now={now} />
         <QuickLinks />
+        <GroupStandings standings={groupStandings} />
       </main>
     </div>
   )
