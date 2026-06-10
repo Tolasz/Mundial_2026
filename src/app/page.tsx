@@ -6,7 +6,7 @@ import { UpcomingMatches } from "@/components/dashboard/UpcomingMatches"
 import { MissingPredictionsAlert } from "@/components/dashboard/MissingPredictionsAlert"
 import { QuickLinks } from "@/components/dashboard/QuickLinks"
 import { GroupStandings } from "@/components/dashboard/GroupStandings"
-import { upcomingMatches, missingPredictions } from "@/lib/dashboard/derive"
+import { upcomingMatches, missingPredictions, next24hMatches } from "@/lib/dashboard/derive"
 import type { DashboardMatchVM, DashboardTeamVM } from "@/lib/dashboard/derive"
 import { rankRows } from "@/lib/leaderboard/derive"
 import { computeGroupStandings } from "@/lib/groups/derive"
@@ -78,7 +78,7 @@ export default async function HomePage() {
 
       supabase
         .from("predictions")
-        .select("match_id")
+        .select("match_id, home_pick, away_pick")
         .eq("user_id", user.id),
 
       supabase
@@ -104,6 +104,13 @@ export default async function HomePage() {
   const nick =
     profileResult.data?.nick ?? user.email?.split("@")[0] ?? "Graczu"
 
+  const predictionsByMatchId = new Map(
+    (predictionsResult.data ?? []).map((p) => [
+      p.match_id,
+      { homePick: p.home_pick as number, awayPick: p.away_pick as number },
+    ]),
+  )
+
   const allMatches: DashboardMatchVM[] = (
     (matchesResult.data as RawMatch[] | null) ?? []
   ).map((m) => ({
@@ -114,13 +121,14 @@ export default async function HomePage() {
     roundLabel: m.round_label,
     home: m.home_team ? toTeamVM(m.home_team) : null,
     away: m.away_team ? toTeamVM(m.away_team) : null,
+    prediction: predictionsByMatchId.get(m.id) ?? null,
   }))
 
   const userPredictions = (predictionsResult.data ?? []).map((p) => ({
     matchId: p.match_id,
   }))
 
-  const upcoming = upcomingMatches(allMatches, now, 6)
+  const upcoming = next24hMatches(allMatches, now)
   const missing = missingPredictions(allMatches, userPredictions, now)
 
   // Group standings derived from finished group-stage matches.

@@ -75,6 +75,7 @@ export async function savePrediction(
     return { success: false, error: "Błąd zapisu. Spróbuj ponownie." }
   }
 
+  revalidatePath("/")
   revalidatePath("/predictions")
   return { success: true }
 }

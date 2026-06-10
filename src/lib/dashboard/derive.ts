@@ -15,6 +15,7 @@ export interface DashboardMatchVM {
   roundLabel: string | null
   home: DashboardTeamVM | null
   away: DashboardTeamVM | null
+  prediction: { homePick: number; awayPick: number } | null
 }
 
 export interface DashboardPredictionVM {
@@ -52,6 +53,25 @@ export function missingPredictions(
       m.away !== null &&
       !predictedIds.has(m.id),
   )
+}
+
+/**
+ * Returns matches with kickoff within the next 24 hours, sorted ascending.
+ */
+export function next24hMatches(
+  matches: DashboardMatchVM[],
+  now: Date,
+): DashboardMatchVM[] {
+  const cutoff = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+  return matches
+    .filter(
+      (m) =>
+        new Date(m.kickoffAt) > now &&
+        new Date(m.kickoffAt) <= cutoff &&
+        m.home !== null &&
+        m.away !== null,
+    )
+    .sort((a, b) => new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime())
 }
 
 /**
