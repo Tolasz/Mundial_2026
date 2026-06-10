@@ -31,7 +31,7 @@ export default async function OpiniePage() {
 
   if (error) {
     return (
-      <div className="space-y-4">
+      <div className="max-w-3xl mx-auto space-y-4">
         <h1 className="text-2xl font-bold">Opinie ekspertów</h1>
         <p className="text-destructive">
           Błąd ładowania opinii. Spróbuj odświeżyć stronę.
@@ -44,7 +44,7 @@ export default async function OpiniePage() {
     opinions && opinions.length > 0 ? opinions[0].generated_at : null
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6">
       {/* Nagłówek */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
@@ -76,7 +76,7 @@ export default async function OpiniePage() {
 
       {/* 3 karty ekspertów */}
       {opinions && opinions.length > 0 && (
-        <div className="max-w-3xl mx-auto space-y-8">
+        <div className="space-y-8">
           {opinions.map((opinion, index) => {
             const picks = (
               Array.isArray(opinion.picks) ? opinion.picks : []
