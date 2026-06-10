@@ -11,8 +11,8 @@ const MEDAL_CONFIG = {
     label: "🥇",
     cardClass:
       "border-accent bg-accent/10 dark:bg-accent/15 shadow-md order-1 sm:order-2 sm:-translate-y-4 z-10",
-    rankClass: "text-accent-foreground font-black text-2xl",
-    pointsClass: "text-accent-foreground font-extrabold text-xl",
+    rankClass: "text-accent-foreground dark:text-accent font-black text-2xl",
+    pointsClass: "text-accent-foreground dark:text-accent font-extrabold text-xl",
   },
   2: {
     label: "🥈",
