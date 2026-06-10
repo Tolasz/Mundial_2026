@@ -47,10 +47,10 @@ export function MobileNav({ links, nick }: MobileNavProps) {
                 href={link.href}
                 onClick={() => setOpen(false)}
                 className={cn(
-                  "px-3 py-3 text-base font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground",
+                  "px-3 py-3 text-base font-medium rounded-md transition-colors border hover:bg-accent hover:text-accent-foreground",
                   (link.exact ? pathname === link.href : pathname.startsWith(link.href))
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground"
+                    ? "border-primary/40 bg-accent text-accent-foreground"
+                    : "border-border text-muted-foreground hover:border-border/80"
                 )}
               >
                 {link.label}

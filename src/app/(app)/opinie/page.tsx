@@ -76,8 +76,8 @@ export default async function OpiniePage() {
 
       {/* 3 karty ekspertów */}
       {opinions && opinions.length > 0 && (
-        <div className="space-y-4">
-          {opinions.map((opinion) => {
+        <div className="space-y-8">
+          {opinions.map((opinion, index) => {
             const picks = (
               Array.isArray(opinion.picks) ? opinion.picks : []
             ) as unknown as ExpertPickDisplay[]
@@ -88,6 +88,7 @@ export default async function OpiniePage() {
                 displayName={opinion.display_name}
                 intro={opinion.intro}
                 picks={picks}
+                colorIndex={index}
               />
             )
           })}

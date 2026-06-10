@@ -24,8 +24,10 @@ export function DesktopNav({ links }: { links: NavLink[] }) {
             key={link.href}
             href={link.href}
             className={cn(
-              "px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground",
-              isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground",
+              "px-3 py-2 text-sm font-medium rounded-md transition-colors border hover:bg-accent hover:text-accent-foreground",
+              isActive
+                ? "border-primary/40 bg-accent text-accent-foreground"
+                : "border-border text-muted-foreground hover:border-border/80",
             )}
           >
             {link.label}
