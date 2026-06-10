@@ -4,13 +4,14 @@ const LINKS = [
   { href: "/predictions", label: "Typy", icon: "⚽" },
   { href: "/leaderboard", label: "Ranking", icon: "🏆" },
   { href: "/champion", label: "Mistrz", icon: "🌟" },
+  { href: "/opinie", label: "Opinie ekspertów", icon: "🎙️" },
 ]
 
 export function QuickLinks() {
   return (
     <section>
       <h2 className="text-lg font-semibold mb-3">Skróty</h2>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {LINKS.map((link) => (
           <Link
             key={link.href}

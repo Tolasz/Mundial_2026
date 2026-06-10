@@ -76,7 +76,7 @@ export default async function OpiniePage() {
 
       {/* 3 karty ekspertów */}
       {opinions && opinions.length > 0 && (
-        <div className="space-y-8">
+        <div className="max-w-3xl mx-auto space-y-8">
           {opinions.map((opinion, index) => {
             const picks = (
               Array.isArray(opinion.picks) ? opinion.picks : []
