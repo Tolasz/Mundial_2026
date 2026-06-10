@@ -54,7 +54,7 @@ export default async function LeaderboardPage() {
 
       {hasPodium && (
         <p className="text-xs text-muted-foreground">
-          3 pkt = dokładny wynik · 1 pkt = trafiony rezultat (W/R/P) · ★ = bonus za trafionego mistrza (+50 pkt)
+          3 pkt = dokładny wynik · 1 pkt = trafiony rezultat (W/R/P) · ★ = bonus za trafionego mistrza (+20 pkt)
         </p>
       )}
     </div>
