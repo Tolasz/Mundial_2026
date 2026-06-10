@@ -36,7 +36,7 @@ function writeJson(path: string, data: unknown): string {
 
 async function fetchAll<T>(
   label: string,
-  fetcher: () => Promise<{ data: T[] | null; error: unknown }>,
+  fetcher: () => PromiseLike<{ data: T[] | null; error: unknown }>,
 ): Promise<T[]> {
   const { data, error } = await fetcher()
   if (error) throw new Error(`Błąd pobierania ${label}: ${JSON.stringify(error)}`)

@@ -12,16 +12,23 @@
 
 -- URL endpointu (podmień domenę na swój deployment produkcyjny)
 SELECT vault.create_secret(
-  'https://TWOJA-DOMENA.vercel.app/api/cron/sync-results',
+  'https://mundial-2026-lemon.vercel.app/api/cron/sync-results',
   'sync_results_url',
   'URL endpointu synchronizacji wyników (pg_cron)'
 );
 
 -- CRON_SECRET (ta sama wartość co zmienna środowiskowa w aplikacji)
 SELECT vault.create_secret(
-  'WKLEJ_TUTAJ_CRON_SECRET',
+  'adbhs78ofiqehsdopmadvnasy78f7dvas',
   'cron_secret',
   'Bearer token autoryzujący joba sync-results'
+);
+
+-- URL endpointu generowania opinii AI (podmień domenę)
+SELECT vault.create_secret(
+  'https://mundial-2026-lemon.vercel.app/api/cron/generate-opinions',
+  'generate_opinions_url',
+  'URL endpointu generowania opinii ekspertów (pg_cron)'
 );
 
 -- ------------------------------------------------------------

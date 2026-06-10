@@ -12,6 +12,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      expert_opinions: {
+        Row: {
+          display_name: string
+          generated_at: string
+          intro: string
+          persona: string
+          picks: Json
+        }
+        Insert: {
+          display_name: string
+          generated_at?: string
+          intro: string
+          persona: string
+          picks?: Json
+        }
+        Update: {
+          display_name?: string
+          generated_at?: string
+          intro?: string
+          persona?: string
+          picks?: Json
+        }
+        Relationships: []
+      }
       matches: {
         Row: {
           away_score: number | null
@@ -278,5 +302,6 @@ export type Prediction = Tables<"predictions">
 export type Settings = Tables<"settings">
 export type LeaderboardRow = Database["public"]["Views"]["leaderboard"]["Row"]
 export type PlayerPointsHistoryRow = Database["public"]["Views"]["player_points_history"]["Row"]
+export type ExpertOpinion = Tables<"expert_opinions">
 export type MatchStage = Enums<"match_stage">
 export type MatchStatus = Enums<"match_status">
