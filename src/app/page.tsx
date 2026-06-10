@@ -159,7 +159,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen flex flex-col">
       <AppHeader />
-        <main className="flex-1 container mx-auto max-w-6xl px-4 py-6 space-y-6">
+        <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-6 space-y-6">
         <WelcomeHero nick={nick} rank={rank} totalPoints={totalPoints} />
         <MissingPredictionsAlert count={missing.length} />
         <UpcomingMatches matches={upcoming} now={now} />
