@@ -4,7 +4,6 @@ import { AppHeader } from "@/components/app-header"
 import { WelcomeHero } from "@/components/dashboard/WelcomeHero"
 import { UpcomingMatches } from "@/components/dashboard/UpcomingMatches"
 import { MissingPredictionsAlert } from "@/components/dashboard/MissingPredictionsAlert"
-import { QuickLinks } from "@/components/dashboard/QuickLinks"
 import { GroupStandings } from "@/components/dashboard/GroupStandings"
 import { upcomingMatches, missingPredictions, next24hMatches } from "@/lib/dashboard/derive"
 import type { DashboardMatchVM, DashboardTeamVM } from "@/lib/dashboard/derive"
@@ -185,15 +184,18 @@ export default async function HomePage() {
     (matchesResult.data ?? []).map((m) => [m.id, m.kickoff_at]),
   )
 
-  // Group settled predictions by user and sort chronologically
+  // Group settled predictions by user — only matches from last 24h
+  const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
   const historyByUser = new Map<string, { matchId: string; points: number; kickoffAt: string }[]>()
   for (const pred of historyResult.data ?? []) {
+    const kickoffAt = matchKickoffMap.get(pred.match_id as string) ?? ""
+    if (kickoffAt < cutoff) continue
     const uid = pred.user_id as string
     if (!historyByUser.has(uid)) historyByUser.set(uid, [])
     historyByUser.get(uid)!.push({
       matchId: pred.match_id as string,
       points: pred.points_awarded as number,
-      kickoffAt: matchKickoffMap.get(pred.match_id as string) ?? "",
+      kickoffAt,
     })
   }
   for (const entries of historyByUser.values()) {
@@ -224,7 +226,6 @@ export default async function HomePage() {
         <HomePlayersTable rows={homeTableRows} />
         <MissingPredictionsAlert count={missing.length} />
         <UpcomingMatches matches={upcoming} now={now} />
-        <QuickLinks />
         <GroupStandings standings={groupStandings} />
       </main>
     </div>
