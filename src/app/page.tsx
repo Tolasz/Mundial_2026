@@ -180,7 +180,10 @@ export default async function HomePage() {
   const groupStandings = computeGroupStandings(groupTeams, groupMatches)
 
   // Derive rank + points from leaderboard rows
-  const { podium, rest } = rankRows(leaderboardResult.data ?? [], user.id)
+  const previousRanks = new Map(
+    (snapshotsResult.data ?? []).map((s) => [s.user_id as string, s.rank as number]),
+  )
+  const { podium, rest } = rankRows(leaderboardResult.data ?? [], user.id, previousRanks)
   const allRanked = [...podium, ...rest]
   const myEntry = allRanked.find((r) => r.isCurrentUser)
   const rank = myEntry?.rank ?? null
