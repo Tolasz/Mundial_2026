@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS leaderboard_snapshots (
 ALTER TABLE leaderboard_snapshots ENABLE ROW LEVEL SECURITY;
 
 -- Wszyscy zalogowani mogą odczytywać snapshoty (do wyświetlania zmian pozycji)
+DROP POLICY IF EXISTS "leaderboard_snapshots_read" ON leaderboard_snapshots;
 CREATE POLICY "leaderboard_snapshots_read" ON leaderboard_snapshots
   FOR SELECT TO authenticated USING (true);
 
