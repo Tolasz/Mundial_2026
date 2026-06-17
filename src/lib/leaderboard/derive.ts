@@ -10,6 +10,8 @@ export interface LeaderRow {
   championBonus: number
   rank: number
   isCurrentUser: boolean
+  /** Zmiana pozycji względem poprzedniego dnia (> 0 = awans, < 0 = spadek, null = brak historii) */
+  rankChange: number | null
 }
 
 /** Raw row from the leaderboard view */
@@ -35,10 +37,13 @@ export interface RankedLeaderboard {
  * Assumes rows already arrive in descending order (total_points DESC,
  * exact_hits DESC) from the query — we simply assign rank numbers while
  * handling ties.
+ *
+ * @param previousRanks - mapa user_id → pozycja z poprzedniego dnia (z leaderboard_snapshots)
  */
 export function rankRows(
   rows: RawLeaderRow[],
   currentUserId: string,
+  previousRanks?: Map<string, number>,
 ): RankedLeaderboard {
   if (rows.length === 0) return { podium: [], rest: [] }
 
@@ -58,6 +63,7 @@ export function rankRows(
       }
     }
 
+    const previousRank = previousRanks?.get(raw.user_id ?? "") ?? null
     ranked.push({
       userId: raw.user_id ?? "",
       nick: raw.nick ?? "Gracz",
@@ -68,6 +74,7 @@ export function rankRows(
       championBonus: raw.champion_bonus ?? 0,
       rank,
       isCurrentUser: raw.user_id === currentUserId,
+      rankChange: previousRank !== null ? previousRank - rank : null,
     })
   }
 

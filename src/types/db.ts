@@ -12,6 +12,38 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      leaderboard_snapshots: {
+        Row: {
+          id: number
+          snapshot_date: string
+          user_id: string
+          rank: number
+          total_points: number
+        }
+        Insert: {
+          id?: number
+          snapshot_date?: string
+          user_id: string
+          rank: number
+          total_points: number
+        }
+        Update: {
+          id?: number
+          snapshot_date?: string
+          user_id?: string
+          rank?: number
+          total_points?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_summaries: {
         Row: {
           display_name: string
