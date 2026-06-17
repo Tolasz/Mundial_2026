@@ -9,6 +9,8 @@ import { GroupStandings } from "@/components/dashboard/GroupStandings"
 import { upcomingMatches, missingPredictions, next24hMatches } from "@/lib/dashboard/derive"
 import type { DashboardMatchVM, DashboardTeamVM } from "@/lib/dashboard/derive"
 import { rankRows } from "@/lib/leaderboard/derive"
+import { HomePlayersTable } from "@/components/home-players-table"
+import type { HomeTableRow } from "@/components/home-players-table"
 import { computeGroupStandings } from "@/lib/groups/derive"
 import type { GroupTeamVM, GroupMatchVM } from "@/lib/groups/derive"
 
@@ -66,6 +68,8 @@ export default async function HomePage() {
     profileResult,
     leaderboardResult,
     teamsResult,
+    historyResult,
+    championsResult,
   ] = await Promise.all([
       supabase
         .from("matches")
@@ -99,6 +103,18 @@ export default async function HomePage() {
         .from("teams")
         .select("id, name, short_name, flag_url, group")
         .not("group", "is", null),
+
+      // All settled predictions for history dots (RLS allows reading others' after kickoff)
+      supabase
+        .from("predictions")
+        .select("user_id, match_id, points_awarded")
+        .not("points_awarded", "is", null),
+
+      // Champion picks with team details
+      supabase
+        .from("profiles")
+        .select("id, champion_team_id, teams:teams!profiles_champion_team_id_fkey(id, name, flag_url)")
+        .not("champion_team_id", "is", null),
     ])
 
   const nick =
@@ -164,11 +180,48 @@ export default async function HomePage() {
   const rank = myEntry?.rank ?? null
   const totalPoints = myEntry?.totalPoints ?? null
 
+  // Build match kickoff lookup for sorting history chronologically
+  const matchKickoffMap = new Map(
+    (matchesResult.data ?? []).map((m) => [m.id, m.kickoff_at]),
+  )
+
+  // Group settled predictions by user and sort chronologically
+  const historyByUser = new Map<string, { matchId: string; points: number; kickoffAt: string }[]>()
+  for (const pred of historyResult.data ?? []) {
+    const uid = pred.user_id as string
+    if (!historyByUser.has(uid)) historyByUser.set(uid, [])
+    historyByUser.get(uid)!.push({
+      matchId: pred.match_id as string,
+      points: pred.points_awarded as number,
+      kickoffAt: matchKickoffMap.get(pred.match_id as string) ?? "",
+    })
+  }
+  for (const entries of historyByUser.values()) {
+    entries.sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt))
+  }
+
+  // Build champion info map
+  type RawChampionRow = { id: string; champion_team_id: string | null; teams: { id: string; name: string; flag_url: string } | null }
+  const championByUser = new Map<string, { name: string; flagUrl: string }>()
+  for (const row of (championsResult.data ?? []) as RawChampionRow[]) {
+    if (row.teams) {
+      championByUser.set(row.id, { name: row.teams.name, flagUrl: row.teams.flag_url })
+    }
+  }
+
+  // Merge into HomeTableRow[]
+  const homeTableRows: HomeTableRow[] = allRanked.map((r) => ({
+    ...r,
+    history: (historyByUser.get(r.userId) ?? []).map((e) => e.points),
+    champion: championByUser.get(r.userId) ?? null,
+  }))
+
   return (
     <div className="min-h-screen flex flex-col">
       <AppHeader />
         <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-6 space-y-6">
         <WelcomeHero nick={nick} rank={rank} totalPoints={totalPoints} />
+        <HomePlayersTable rows={homeTableRows} />
         <MissingPredictionsAlert count={missing.length} />
         <UpcomingMatches matches={upcoming} now={now} />
         <QuickLinks />
