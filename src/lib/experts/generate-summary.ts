@@ -114,7 +114,7 @@ async function fetchPredictionStats(
   for (const row of data) {
     const mid = row.match_id as string
     const pts = row.points_awarded as number
-    const nick = (row.nick as { nick: string } | null)?.nick ?? "?"
+    const nick = (row.nick as unknown as { nick: string } | null)?.nick ?? "?"
 
     if (!map.has(mid)) {
       map.set(mid, { matchId: mid, exactHits: 0, resultHits: 0, missHits: 0, topGainers: [] })
