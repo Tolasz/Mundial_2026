@@ -12,6 +12,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      daily_summaries: {
+        Row: {
+          display_name: string
+          generated_at: string
+          matches_covered: Json
+          persona: string
+          summary: string
+        }
+        Insert: {
+          display_name: string
+          generated_at?: string
+          matches_covered?: Json
+          persona: string
+          summary: string
+        }
+        Update: {
+          display_name?: string
+          generated_at?: string
+          matches_covered?: Json
+          persona?: string
+          summary?: string
+        }
+        Relationships: []
+      }
       expert_opinions: {
         Row: {
           display_name: string
