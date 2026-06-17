@@ -134,6 +134,54 @@ async function fetchPredictionStats(
 }
 
 // ------------------------------------
+// Tabela liderów
+// ------------------------------------
+
+interface LeaderboardEntry {
+  rank: number
+  nick: string
+  totalPoints: number
+  exactHits: number
+}
+
+async function fetchLeaderboard(
+  supabase: Supabase,
+): Promise<LeaderboardEntry[]> {
+  const { data } = await supabase
+    .from("leaderboard")
+    .select("nick, total_points, exact_hits")
+    .order("total_points", { ascending: false })
+    .order("exact_hits", { ascending: false })
+    .limit(15)
+
+  if (!data) return []
+
+  let rank = 1
+  return data.map((row, i) => {
+    if (i > 0) {
+      const prev = data[i - 1]
+      if ((row.total_points ?? 0) !== (prev.total_points ?? 0) || (row.exact_hits ?? 0) !== (prev.exact_hits ?? 0)) {
+        rank = i + 1
+      }
+    }
+    return {
+      rank,
+      nick: row.nick ?? "Gracz",
+      totalPoints: row.total_points ?? 0,
+      exactHits: row.exact_hits ?? 0,
+    }
+  })
+}
+
+function buildLeaderboardBlock(entries: LeaderboardEntry[]): string {
+  if (entries.length === 0) return "Brak danych o tabeli."
+  const rows = entries.map(
+    (e) => `  ${e.rank}. ${e.nick} — ${e.totalPoints} pkt (${e.exactHits} dokładnych)`,
+  )
+  return `Aktualna tabela graczy (top ${entries.length}):\n${rows.join("\n")}`
+}
+
+// ------------------------------------
 // Poprzednie typy ekspertów per mecz
 // ------------------------------------
 
@@ -337,6 +385,10 @@ export async function generateDailySummaries(
   // 5. Pobierz poprzednie typy ekspertów
   const expertPicks = await fetchExpertPreviousPicks(supabase, matchIds)
 
+  // 5b. Pobierz tabelę liderów
+  const leaderboardEntries = await fetchLeaderboard(supabase)
+  const leaderboardBlock = buildLeaderboardBlock(leaderboardEntries)
+
   // 6. Zbuduj prompt block
   const matchesBlock = buildSummaryPromptBlock(
     matches,
@@ -366,7 +418,9 @@ export async function generateDailySummaries(
         "",
         matchesBlock,
         "",
-        "Napisz obszerne podsumowanie w swoim stylu — komentuj każdy mecz, gole, kartki, niespodzianki, jak typowali gracze i czy Twoje prognozy się sprawdziły. Możesz pisać długo.",
+        leaderboardBlock,
+        "",
+        "Napisz KRÓTKIE podsumowanie w swoim stylu — max 3 akapity łącznie. Obowiązkowo skomentuj tabelę graczy: kto wiedzie, kto leży, kto traci punkty jak głupi — bądź maksymalnie krytyczny i złośliwy wobec typujących. Nie oszczędzaj nikogo.",
       ].join("\n")
 
       const result = await aiClient.chatJson<{ summary: string }>(
@@ -374,7 +428,7 @@ export async function generateDailySummaries(
           { role: "system", content: persona.summarySystemPrompt },
           { role: "user", content: userMessage },
         ],
-        3500,
+        1200,
       )
 
       if (!result.summary || typeof result.summary !== "string") {
