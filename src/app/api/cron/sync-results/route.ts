@@ -164,7 +164,11 @@ export async function GET(request: Request) {
 
         if (existing) {
           // Zawsze odśwież kickoff_at; uzupełnij drużyny tylko gdy były nullem
-          const updates: Record<string, unknown> = { kickoff_at: f.kickoffAt }
+          const updates: {
+            kickoff_at: string
+            home_team_id?: string
+            away_team_id?: string
+          } = { kickoff_at: f.kickoffAt }
           if (!existing.home_team_id && homeTeamId) updates.home_team_id = homeTeamId
           if (!existing.away_team_id && awayTeamId) updates.away_team_id = awayTeamId
 
