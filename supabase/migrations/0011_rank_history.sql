@@ -58,6 +58,14 @@ $$;
 -- ------------------------------------
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
+-- 06:01 UTC — przed porannym syncem (snapshot "stanu sprzed dnia")
+SELECT cron.schedule(
+  'snapshot-leaderboard-morning',
+  '1 6 * * *',
+  $$SELECT public.take_leaderboard_snapshot(CURRENT_DATE - 1);$$
+);
+
+-- 07:01 UTC — po porannym syncrozacji wyników (snapshot z pełnymi wynikami)
 SELECT cron.schedule(
   'snapshot-leaderboard-daily',
   '1 7 * * *',
