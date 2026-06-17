@@ -64,6 +64,8 @@ export interface FootballApi {
   getFixtures(): Promise<FixtureDTO[]>
   /** Wyniki: external_id, home/away score, status. */
   getResults(): Promise<ResultDTO[]>
+  /** Terminarz i wyniki w jednym żądaniu HTTP — używane przez cron sync. */
+  getFixturesAndResults(): Promise<{ fixtures: FixtureDTO[]; results: ResultDTO[] }>
   /** Szczegóły zakończonego meczu: gole, kartki. Graceful — zwraca puste tablice przy błędzie. */
   getMatchDetails(externalId: string): Promise<MatchDetails>
 }
@@ -308,6 +310,14 @@ export class FootballDataApi implements FootballApi {
   async getResults(): Promise<ResultDTO[]> {
     const matches = await this.fetchMatches()
     return matches.map(mapMatchToResult)
+  }
+
+  async getFixturesAndResults(): Promise<{ fixtures: FixtureDTO[]; results: ResultDTO[] }> {
+    const matches = await this.fetchMatches()
+    return {
+      fixtures: matches.map(mapMatchToFixture),
+      results: matches.map(mapMatchToResult),
+    }
   }
 
   async getMatchDetails(externalId: string): Promise<MatchDetails> {
