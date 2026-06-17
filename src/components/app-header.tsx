@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: "/leaderboard", label: "Ranking", exact: false },
   { href: "/champion", label: "Mistrz", exact: false },
   { href: "/opinie", label: "Opinie ekspertów", exact: false },
+  { href: "/podsumowanie", label: "Podsumowanie dnia", exact: false },
 ] as const
 
 export async function AppHeader() {

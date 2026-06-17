@@ -11,10 +11,11 @@ export function AdminRefreshOpinions() {
   async function handleRefresh() {
     setLoading(true)
     try {
-      const res = await fetch("/api/admin/generate-opinions", {
+      // Wygeneruj opinie ekspertów (nadchodzące mecze)
+      const opinionsRes = await fetch("/api/admin/generate-opinions", {
         method: "POST",
       })
-      const data = (await res.json()) as {
+      const opinionsData = (await opinionsRes.json()) as {
         ok?: boolean
         matchCount?: number
         opinions?: Array<{ persona: string; ok: boolean; error?: string }>
@@ -22,23 +23,39 @@ export function AdminRefreshOpinions() {
         detail?: string
       }
 
-      if (!res.ok || !data.ok) {
-        toast.error(data.error ?? "Błąd generowania opinii", {
-          description: data.detail,
+      if (!opinionsRes.ok || !opinionsData.ok) {
+        toast.error(opinionsData.error ?? "Błąd generowania opinii", {
+          description: opinionsData.detail,
         })
         return
       }
 
-      const failed = (data.opinions ?? []).filter((o) => !o.ok)
-      if (failed.length > 0) {
+      // Wygeneruj podsumowanie dnia (zakończone mecze z ostatnich 24h)
+      const summaryRes = await fetch("/api/admin/generate-summary", {
+        method: "POST",
+      })
+      const summaryData = (await summaryRes.json()) as {
+        ok?: boolean
+        matchCount?: number
+        summaries?: Array<{ persona: string; ok: boolean; error?: string }>
+        error?: string
+        detail?: string
+      }
+
+      // Zbierz błędy z obu operacji
+      const opinionsFailed = (opinionsData.opinions ?? []).filter((o) => !o.ok)
+      const summariesFailed = (summaryData.summaries ?? []).filter((s) => !s.ok)
+      const allFailed = [...opinionsFailed, ...summariesFailed]
+
+      if (allFailed.length > 0) {
         toast.warning("Generowanie zakończone z błędami", {
-          description: failed.map((o) => `${o.persona}: ${o.error}`).join("; "),
+          description: allFailed.map((o) => `${o.persona}: ${o.error}`).join("; "),
         })
       } else {
+        const opCount = opinionsData.matchCount ?? 0
+        const sumCount = summaryData.matchCount ?? 0
         toast.success(
-          `Opinie wygenerowane dla ${data.matchCount ?? 0} mecz${
-            (data.matchCount ?? 0) === 1 ? "u" : "ów"
-          }`,
+          `Opinie (${opCount} mecz${opCount === 1 ? "" : opCount < 5 ? "e" : "ów"}) i podsumowanie dnia (${sumCount} mecz${sumCount === 1 ? "" : sumCount < 5 ? "e" : "ów"}) wygenerowane`,
         )
       }
     } catch {

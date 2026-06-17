@@ -35,11 +35,37 @@ export interface ResultDTO {
   status: MatchStatus
 }
 
+/** Zdarzenie gola z meczu (dostępne na darmowym tierze via /v4/matches/{id}) */
+export interface GoalEvent {
+  minute: number | null
+  extraTime: number | null
+  type: string | null // "REGULAR" | "OWN_GOAL" | "PENALTY"
+  scorerName: string | null
+  assistName: string | null
+  teamName: string | null
+}
+
+/** Kartka z meczu */
+export interface BookingEvent {
+  minute: number | null
+  playerName: string | null
+  teamName: string | null
+  card: string | null // "YELLOW_CARD" | "RED_CARD" | "YELLOW_RED_CARD"
+}
+
+/** Szczegóły meczu (gole + kartki) */
+export interface MatchDetails {
+  goals: GoalEvent[]
+  bookings: BookingEvent[]
+}
+
 export interface FootballApi {
   /** Terminarz: drużyny, grupa, kickoff, external_id. */
   getFixtures(): Promise<FixtureDTO[]>
   /** Wyniki: external_id, home/away score, status. */
   getResults(): Promise<ResultDTO[]>
+  /** Szczegóły zakończonego meczu: gole, kartki. Graceful — zwraca puste tablice przy błędzie. */
+  getMatchDetails(externalId: string): Promise<MatchDetails>
 }
 
 // ------------------------------------
@@ -71,6 +97,36 @@ interface FdMatch {
 
 interface FdMatchesResponse {
   matches: FdMatch[]
+}
+
+// Typy dla endpointu szczegółów meczu /v4/matches/{id}
+
+interface FdPerson {
+  id: number | null
+  name: string | null
+}
+
+interface FdGoal {
+  minute: number | null
+  extraTime: number | null
+  type: string | null
+  team: { id: number | null; name: string | null } | null
+  scorer: FdPerson | null
+  assist: FdPerson | null
+}
+
+interface FdBooking {
+  minute: number | null
+  team: { id: number | null; name: string | null } | null
+  player: FdPerson | null
+  card: string | null
+}
+
+interface FdMatchDetailResponse {
+  match: {
+    goals: FdGoal[] | null
+    bookings: FdBooking[] | null
+  }
 }
 
 // ------------------------------------
@@ -252,6 +308,44 @@ export class FootballDataApi implements FootballApi {
   async getResults(): Promise<ResultDTO[]> {
     const matches = await this.fetchMatches()
     return matches.map(mapMatchToResult)
+  }
+
+  async getMatchDetails(externalId: string): Promise<MatchDetails> {
+    const url = `${this.baseUrl}/matches/${externalId}`
+    try {
+      const res = await this.fetchFn(url, {
+        headers: { "X-Auth-Token": this.apiKey },
+      })
+
+      if (!res.ok) {
+        // Nie rzucamy — graceful fallback
+        return { goals: [], bookings: [] }
+      }
+
+      const data = (await res.json()) as FdMatchDetailResponse
+      const match = data?.match
+
+      const goals: GoalEvent[] = (match?.goals ?? []).map((g) => ({
+        minute: g.minute ?? null,
+        extraTime: g.extraTime ?? null,
+        type: g.type ?? null,
+        scorerName: g.scorer?.name ?? null,
+        assistName: g.assist?.name ?? null,
+        teamName: g.team?.name ?? null,
+      }))
+
+      const bookings: BookingEvent[] = (match?.bookings ?? []).map((b) => ({
+        minute: b.minute ?? null,
+        playerName: b.player?.name ?? null,
+        teamName: b.team?.name ?? null,
+        card: b.card ?? null,
+      }))
+
+      return { goals, bookings }
+    } catch {
+      // Błąd sieci lub parsowania — graceful fallback
+      return { goals: [], bookings: [] }
+    }
   }
 }
 
