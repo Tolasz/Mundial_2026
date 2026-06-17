@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server"
 import { createServiceClient } from "@/lib/supabase/server"
 import { FootballDataApi } from "@/lib/football-api"
+import type { MatchStage } from "@/types/db"
 
 export const runtime = "nodejs"
 
@@ -141,7 +142,7 @@ export async function GET(request: Request) {
       }
 
       type MatchInsert = {
-        stage: string
+        stage: MatchStage
         group: null
         kickoff_at: string
         home_team_id: string | null
