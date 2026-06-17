@@ -34,7 +34,7 @@ export function MobileNav({ links, nick }: MobileNavProps) {
       </Button>
 
       {open && (
-        <div className="fixed inset-0 top-14 z-40 bg-background border-t border-border">
+        <div className="fixed left-0 right-0 bottom-0 top-14 z-40 bg-card border-t border-border overflow-y-auto">
           <nav className="flex flex-col p-4 gap-1">
             {nick && (
               <p className="text-sm text-muted-foreground px-3 py-2 mb-2 border-b border-border">
