@@ -69,6 +69,7 @@ export default async function HomePage() {
     teamsResult,
     historyResult,
     championsResult,
+    snapshotsResult,
   ] = await Promise.all([
       supabase
         .from("matches")
@@ -114,6 +115,12 @@ export default async function HomePage() {
         .from("profiles")
         .select("id, champion_team_id, teams:teams!profiles_champion_team_id_fkey(id, name, flag_url)")
         .not("champion_team_id", "is", null),
+
+      // Snapshots z poprzedniego dnia do wyświetlania zmiany pozycji
+      supabase
+        .from("leaderboard_snapshots")
+        .select("user_id, rank")
+        .eq("snapshot_date", new Date(now.getTime() - 86400000).toISOString().split("T")[0]),
     ])
 
   const nick =

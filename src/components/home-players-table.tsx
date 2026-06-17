@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Users } from "lucide-react"
+import { Users, TrendingUp, TrendingDown, Minus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { TeamFlag } from "@/components/team-flag"
@@ -14,6 +14,29 @@ export interface HomeTableRow extends LeaderRow {
 
 interface HomePlayersTableProps {
   rows: HomeTableRow[]
+}
+
+function RankChange({ change }: { change: number | null }) {
+  if (change === null) {
+    return <span className="text-[10px] text-muted-foreground/50 font-medium">NEW</span>
+  }
+  if (change > 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-emerald-500">
+        <TrendingUp className="size-3" aria-hidden />
+        {change}
+      </span>
+    )
+  }
+  if (change < 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-destructive">
+        <TrendingDown className="size-3" aria-hidden />
+        {Math.abs(change)}
+      </span>
+    )
+  }
+  return <Minus className="size-3 text-muted-foreground/40 mx-auto" aria-hidden />
 }
 
 function HistoryDots({ history }: { history: number[] }) {
@@ -56,6 +79,7 @@ export function HomePlayersTable({ rows }: HomePlayersTableProps) {
         <thead className="bg-muted/50">
           <tr className="border-b text-muted-foreground text-xs">
             <th className="text-left py-3 px-3 w-10">#</th>
+            <th className="py-3 px-2 w-8" title="Zmiana pozycji vs poprzedni dzień"></th>
             <th className="text-left py-3 px-3">Gracz</th>
             <th className="text-right py-3 px-3">Punkty</th>
             <th
@@ -86,6 +110,9 @@ export function HomePlayersTable({ rows }: HomePlayersTableProps) {
             >
               <td className="py-3 px-3 text-muted-foreground font-medium tabular-nums">
                 {row.rank}.
+              </td>
+              <td className="py-3 px-2 text-center">
+                <RankChange change={row.rankChange} />
               </td>
               <td className="py-3 px-3">
                 <div className="flex items-center gap-1.5 flex-wrap">
