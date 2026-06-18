@@ -20,8 +20,11 @@ function makeMatch(overrides: Partial<MatchVM> & { id: string }): MatchVM {
     home: makeTeam("Home"),
     away: makeTeam("Away"),
     prediction: null,
+    pointsAwarded: null,
     isLocked: false,
     predictionStatus: "empty",
+    status: "scheduled",
+    result: null,
     otherPredictions: [],
     ...overrides,
   }

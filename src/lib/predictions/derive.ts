@@ -22,6 +22,8 @@ export interface FilterState {
   query: string
 }
 
+export type MatchStatus = "scheduled" | "live" | "finished" | "postponed"
+
 export interface MatchVM {
   id: string
   group: string | null
@@ -31,8 +33,14 @@ export interface MatchVM {
   home: TeamVM
   away: TeamVM
   prediction: { homePick: number; awayPick: number } | null
+  /** Points awarded to the current user for this match (null until settled). */
+  pointsAwarded: number | null
   isLocked: boolean
   predictionStatus: PredictionStatus
+  /** Raw match status from DB. */
+  status: MatchStatus
+  /** Actual result if known (live or finished). */
+  result: { homeScore: number; awayScore: number } | null
   otherPredictions: OtherPrediction[]
 }
 

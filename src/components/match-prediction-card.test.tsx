@@ -41,8 +41,11 @@ function makeMatch(overrides: Partial<MatchVM> = {}): MatchVM {
     home: makeTeam("Poland", "POL"),
     away: makeTeam("Brazil", "BRA"),
     prediction: null,
+    pointsAwarded: null,
     isLocked: false,
     predictionStatus: "empty",
+    status: "scheduled",
+    result: null,
     otherPredictions: [],
     ...overrides,
   }

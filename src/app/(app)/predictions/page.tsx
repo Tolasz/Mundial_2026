@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { PredictionsBoard } from "@/components/predictions-board"
 import {
   deriveMatchStatus,
+  type MatchStatus,
   type MatchVM,
   type PendingKnockoutVM,
   type TeamVM,
@@ -19,6 +20,9 @@ interface MatchWithTeams {
   id: string
   group: string
   kickoff_at: string
+  status: MatchStatus
+  home_score: number | null
+  away_score: number | null
   home_team: TeamRow
   away_team: TeamRow
 }
@@ -28,6 +32,9 @@ interface KnockoutMatch {
   stage: string
   round_label: string | null
   kickoff_at: string
+  status: MatchStatus
+  home_score: number | null
+  away_score: number | null
   home_team: TeamRow | null
   away_team: TeamRow | null
 }
@@ -36,6 +43,7 @@ interface PredictionRow {
   match_id: string
   home_pick: number
   away_pick: number
+  points_awarded: number | null
 }
 
 function toTeamVM(row: TeamRow): TeamVM {
@@ -62,7 +70,7 @@ export default async function PredictionsPage() {
     supabase
       .from("matches")
       .select(
-        `id, group, kickoff_at,
+        `id, group, kickoff_at, status, home_score, away_score,
          home_team:teams!matches_home_team_id_fkey(id, name, short_name, flag_url),
          away_team:teams!matches_away_team_id_fkey(id, name, short_name, flag_url)`,
       )
@@ -74,7 +82,7 @@ export default async function PredictionsPage() {
     supabase
       .from("matches")
       .select(
-        `id, stage, round_label, kickoff_at,
+        `id, stage, round_label, kickoff_at, status, home_score, away_score,
          home_team:teams!matches_home_team_id_fkey(id, name, short_name, flag_url),
          away_team:teams!matches_away_team_id_fkey(id, name, short_name, flag_url)`,
       )
@@ -114,7 +122,7 @@ export default async function PredictionsPage() {
   if (allTypableIds.length > 0) {
     const { data: predsData } = await supabase
       .from("predictions")
-      .select("match_id, home_pick, away_pick")
+      .select("match_id, home_pick, away_pick, points_awarded")
       .eq("user_id", user.id)
       .in("match_id", allTypableIds)
     predictions = predsData ?? []
@@ -122,11 +130,15 @@ export default async function PredictionsPage() {
 
   const predictionMap = new Map<
     string,
-    { homePick: number; awayPick: number }
+    { homePick: number; awayPick: number; pointsAwarded: number | null }
   >(
     predictions.map((p) => [
       p.match_id,
-      { homePick: p.home_pick, awayPick: p.away_pick },
+      {
+        homePick: p.home_pick,
+        awayPick: p.away_pick,
+        pointsAwarded: p.points_awarded,
+      },
     ]),
   )
 
@@ -181,12 +193,23 @@ export default async function PredictionsPage() {
     stage: string,
     roundLabel: string | null,
     kickoffAt: string,
+    status: MatchStatus,
+    homeScore: number | null,
+    awayScore: number | null,
     homeRow: TeamRow,
     awayRow: TeamRow,
   ): MatchVM {
     const isLocked = now >= new Date(kickoffAt)
-    const prediction = predictionMap.get(id) ?? null
+    const stored = predictionMap.get(id) ?? null
+    const prediction = stored
+      ? { homePick: stored.homePick, awayPick: stored.awayPick }
+      : null
+    const pointsAwarded = stored?.pointsAwarded ?? null
     const predictionStatus = deriveMatchStatus({ prediction, isLocked })
+    const result =
+      homeScore !== null && awayScore !== null
+        ? { homeScore, awayScore }
+        : null
     return {
       id,
       group,
@@ -196,8 +219,11 @@ export default async function PredictionsPage() {
       home: toTeamVM(homeRow),
       away: toTeamVM(awayRow),
       prediction,
+      pointsAwarded,
       isLocked,
       predictionStatus,
+      status,
+      result,
       otherPredictions: otherPredsMap.get(id) ?? [],
     }
   }
@@ -209,6 +235,9 @@ export default async function PredictionsPage() {
       "group",
       null,
       m.kickoff_at,
+      m.status,
+      m.home_score,
+      m.away_score,
       m.home_team,
       m.away_team,
     ),
@@ -221,6 +250,9 @@ export default async function PredictionsPage() {
       m.stage,
       m.round_label,
       m.kickoff_at,
+      m.status,
+      m.home_score,
+      m.away_score,
       m.home_team!,
       m.away_team!,
     ),
