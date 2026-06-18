@@ -303,8 +303,31 @@ export async function generateExpertOpinions(
   const matchesBlock = buildMatchesPromptBlock(matches, oddsEvents)
   const results: ExpertOpinionResult[] = []
 
-  // 3. Generuj opinię dla każdej persony
-  for (const persona of PERSONAS) {
+  // 3. Rotacja autorów — wybierz AUTHOR_COUNT person unikając poprzedniej rundy
+  const { data: prevActive } = await supabase
+    .from("expert_opinions")
+    .select("persona")
+    .eq("is_active", true)
+  const prevActiveKeys = (prevActive ?? []).map(r => r.persona as string)
+  const authors = selectAuthors(PERSONAS, AUTHOR_COUNT, prevActiveKeys)
+
+  // 4. Dezaktywuj wszystkie poprzednie opinie i usuń stare komentarze do opinii
+  await supabase
+    .from("expert_opinions")
+    .update({ is_active: false })
+    .in("persona", PERSONAS.map(p => p.key))
+  await supabase
+    .from("expert_comments")
+    .delete()
+    .eq("post_type", "opinion")
+
+  // 5. Generuj opinie tylko dla wybranych autorów
+  const generatedPosts = new Map<
+    string,
+    { postPersona: string; displayName: string; content: string }
+  >()
+
+  for (const persona of authors) {
     try {
       const userMessage = [
         `Oto nadchodzące mecze Mistrzostw Świata 2026 (${matches.length} meczów):`,
@@ -333,11 +356,25 @@ export async function generateExpertOpinions(
           intro: opinion.intro,
           picks: enrichedPicks as unknown as import("@/types/db").Json,
           generated_at: new Date().toISOString(),
+          is_active: true,
         },
         { onConflict: "persona" },
       )
 
       if (error) throw error
+
+      // Zbierz treść posta do użycia przy generowaniu komentarzy
+      const picksText = enrichedPicks
+        .map(
+          p =>
+            `${p.homeTeamName} ${p.homeScore}:${p.awayScore} ${p.awayTeamName} — ${p.reason}`,
+        )
+        .join("\n")
+      generatedPosts.set(persona.key, {
+        postPersona: persona.key,
+        displayName: persona.displayName,
+        content: `${opinion.intro}\n\nTypy:\n${picksText}`,
+      })
 
       results.push({ persona: persona.key, ok: true })
     } catch (err) {
@@ -346,6 +383,33 @@ export async function generateExpertOpinions(
         ok: false,
         error: err instanceof Error ? err.message : String(err),
       })
+    }
+  }
+
+  // 6. Generuj komentarze od pozostałych person
+  if (generatedPosts.size > 0) {
+    const commenterMap = assignCommenters(authors, PERSONAS)
+
+    // Odwróć mapę: commenterKey → lista postów do skomentowania
+    const commenterToPosts = new Map<
+      string,
+      Array<{ postPersona: string; displayName: string; content: string }>
+    >()
+    for (const [authorKey, commenters] of commenterMap) {
+      const post = generatedPosts.get(authorKey)
+      if (!post) continue
+      for (const commenter of commenters) {
+        if (!commenterToPosts.has(commenter.key)) {
+          commenterToPosts.set(commenter.key, [])
+        }
+        commenterToPosts.get(commenter.key)!.push(post)
+      }
+    }
+
+    for (const [commenterKey, posts] of commenterToPosts) {
+      const commenter = PERSONAS.find(p => p.key === commenterKey)
+      if (!commenter) continue
+      await generateComments(supabase, aiClient, commenter, posts, "opinion")
     }
   }
 
