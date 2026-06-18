@@ -102,6 +102,9 @@ export function MatchPredictionCard({ match }: MatchPredictionCardProps) {
         isFinished &&
           pointsAwarded === 1 &&
           "border-yellow-500/40 bg-yellow-500/5",
+        isFinished &&
+          pointsAwarded === 0 &&
+          "border-red-500/30 bg-red-500/5",
       )}
     >
       {/* Home team */}
