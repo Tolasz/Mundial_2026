@@ -22,7 +22,8 @@ type Supabase = SupabaseClient<Database>
 // Stałe i helpery rotacji
 // ------------------------------------
 
-export const AUTHOR_COUNT = 3
+export const AUTHOR_COUNT = 2
+export const COMMENTS_PER_POST = 3
 
 function shuffleArray<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -46,7 +47,7 @@ export function selectAuthors(
   return shuffleArray([...pool, ...shuffleArray([...excluded])]).slice(0, n)
 }
 
-/** Przydziela 2-3 losowych komentujących (spoza autorów) do każdego posta. */
+/** Przydziela dokładnie COMMENTS_PER_POST losowych komentujących (spoza autorów) do każdego posta. */
 export function assignCommenters(
   authors: readonly Persona[],
   allPersonas: readonly Persona[],
@@ -55,8 +56,7 @@ export function assignCommenters(
   const pool = allPersonas.filter(p => !authorKeys.has(p.key))
   const map = new Map<string, Persona[]>()
   for (const author of authors) {
-    const count = Math.floor(Math.random() * 2) + 2 // 2 lub 3
-    map.set(author.key, shuffleArray([...pool]).slice(0, count))
+    map.set(author.key, shuffleArray([...pool]).slice(0, COMMENTS_PER_POST))
   }
   return map
 }

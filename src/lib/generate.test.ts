@@ -4,6 +4,7 @@ import {
   selectAuthors,
   assignCommenters,
   AUTHOR_COUNT,
+  COMMENTS_PER_POST,
   type UpcomingMatch,
 } from "./experts/generate"
 import type { OddsEvent } from "./odds-api"
@@ -104,7 +105,7 @@ const ALL_8 = [P1, P2, P3, P4, P5, P6, P7, P8] as const
 // ------------------------------------
 
 describe("selectAuthors", () => {
-  it("zwraca dokładnie AUTHOR_COUNT (3) person", () => {
+  it(`zwraca dokładnie AUTHOR_COUNT (${AUTHOR_COUNT}) person`, () => {
     const result = selectAuthors(ALL_8, AUTHOR_COUNT, [])
     expect(result).toHaveLength(AUTHOR_COUNT)
   })
@@ -146,17 +147,16 @@ describe("selectAuthors", () => {
 // ------------------------------------
 
 describe("assignCommenters", () => {
-  it("każdy post dostaje 2 lub 3 komentujących", () => {
-    const authors = [P1, P2, P3]
+  it(`każdy post dostaje dokładnie COMMENTS_PER_POST (${COMMENTS_PER_POST}) komentujących`, () => {
+    const authors = [P1, P2]
     const result = assignCommenters(authors, ALL_8)
     for (const [, commenters] of result) {
-      expect(commenters.length).toBeGreaterThanOrEqual(2)
-      expect(commenters.length).toBeLessThanOrEqual(3)
+      expect(commenters).toHaveLength(COMMENTS_PER_POST)
     }
   })
 
   it("żaden autor nie komentuje swojego własnego posta", () => {
-    const authors = [P1, P2, P3]
+    const authors = [P1, P2]
     const result = assignCommenters(authors, ALL_8)
     for (const [postKey, commenters] of result) {
       for (const c of commenters) {
@@ -166,7 +166,7 @@ describe("assignCommenters", () => {
   })
 
   it("żaden komentujący nie jest autorem żadnego innego posta", () => {
-    const authors = [P1, P2, P3]
+    const authors = [P1, P2]
     const authorKeys = new Set(authors.map(a => a.key))
     const result = assignCommenters(authors, ALL_8)
     for (const [, commenters] of result) {
@@ -177,8 +177,8 @@ describe("assignCommenters", () => {
   })
 
   it("zwraca mapę z kluczem per autor", () => {
-    const authors = [P1, P2, P3]
+    const authors = [P1, P2]
     const result = assignCommenters(authors, ALL_8)
-    expect([...result.keys()].sort()).toEqual(["p1", "p2", "p3"])
+    expect([...result.keys()].sort()).toEqual(["p1", "p2"])
   })
 })
