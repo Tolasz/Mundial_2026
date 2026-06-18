@@ -368,6 +368,10 @@ export type Database = {
         Args: { p_match_id: string }
         Returns: undefined
       }
+      take_leaderboard_snapshot: {
+        Args: { p_date?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       match_stage: "group" | "r32" | "r16" | "qf" | "sf" | "final"

@@ -29,7 +29,7 @@ export async function POST() {
   }
 
   const supabase = await createServiceClient()
-  const { error } = await supabase.rpc("take_leaderboard_snapshot")
+  const { error } = await supabase.rpc("take_leaderboard_snapshot", {})
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
