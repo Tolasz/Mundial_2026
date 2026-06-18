@@ -5,13 +5,24 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
 
+type Step = "sync" | "snapshot" | "opinions" | "summary"
+
+const STEP_LABELS: Record<Step, string> = {
+  sync: "Synchronizacja wyników…",
+  snapshot: "Zapis tabeli…",
+  opinions: "Generowanie opinii…",
+  summary: "Generowanie podsumowania…",
+}
+
 export function AdminRefreshOpinions() {
   const [loading, setLoading] = useState(false)
+  const [step, setStep] = useState<Step | null>(null)
 
   async function handleRefresh() {
     setLoading(true)
     try {
       // 1. Synchronizacja wyników meczów z API
+      setStep("sync")
       const syncRes = await fetch("/api/admin/sync-results", { method: "POST" })
       const syncData = (await syncRes.json()) as {
         ok?: boolean
@@ -29,7 +40,13 @@ export function AdminRefreshOpinions() {
         return
       }
 
-      // 2. Generowanie opinii ekspertów (nadchodzące mecze)
+      // 2. Snapshot tabeli liderów (zapisuje aktualną pozycję po przeliczeniu punktów)
+      setStep("snapshot")
+      await fetch("/api/admin/snapshot", { method: "POST" })
+      // Snapshot jest opcjonalny — błąd nie blokuje dalszych kroków
+
+      // 3. Generowanie opinii ekspertów (nadchodzące mecze)
+      setStep("opinions")
       const opinionsRes = await fetch("/api/admin/generate-opinions", { method: "POST" })
       const opinionsData = (await opinionsRes.json()) as {
         ok?: boolean
@@ -46,7 +63,8 @@ export function AdminRefreshOpinions() {
         return
       }
 
-      // 3. Generowanie podsumowania dnia (zakończone mecze z ostatnich 24h)
+      // 4. Generowanie podsumowania dnia (zakończone mecze z ostatnich 24h)
+      setStep("summary")
       const summaryRes = await fetch("/api/admin/generate-summary", { method: "POST" })
       const summaryData = (await summaryRes.json()) as {
         ok?: boolean
@@ -56,14 +74,14 @@ export function AdminRefreshOpinions() {
         detail?: string
       }
 
-      // Zbierz błędy z generowania
+      // Zbierz błędy
       const opinionsFailed = (opinionsData.opinions ?? []).filter((o) => !o.ok)
       const summariesFailed = (summaryData.summaries ?? []).filter((s) => !s.ok)
       const allFailed = [...opinionsFailed, ...summariesFailed]
-
       const syncErrors = syncData.errors ?? []
+
       if (syncErrors.length > 0) {
-        toast.warning(`Sync zakończony z ${syncErrors.length} błędem${syncErrors.length > 1 ? "i" : ""}`, {
+        toast.warning(`Sync z ${syncErrors.length} błędem${syncErrors.length > 1 ? "i" : ""}`, {
           description: syncErrors.slice(0, 3).join("; "),
         })
       }
@@ -76,13 +94,14 @@ export function AdminRefreshOpinions() {
         const opCount = opinionsData.matchCount ?? 0
         const sumCount = summaryData.matchCount ?? 0
         toast.success(
-          `Dane odświeżone — ${syncData.updated ?? 0} meczów zaktualizowanych, opinie (${opCount}) i podsumowanie (${sumCount}) wygenerowane`,
+          `Gotowe — ${syncData.updated ?? 0} meczów, tabela zapisana, opinie (${opCount}) i podsumowanie (${sumCount}) wygenerowane`,
         )
       }
     } catch {
       toast.error("Nie udało się połączyć z serwerem")
     } finally {
       setLoading(false)
+      setStep(null)
     }
   }
 
@@ -94,7 +113,7 @@ export function AdminRefreshOpinions() {
       disabled={loading}
     >
       <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-      {loading ? "Odświeżanie…" : "Odśwież dane"}
+      {loading && step ? STEP_LABELS[step] : "Odśwież dane"}
     </Button>
   )
 }

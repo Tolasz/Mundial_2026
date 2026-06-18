@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { AdminNav } from "./AdminNav"
 import { SettingsForm } from "./SettingsForm"
+import { AdminRefreshOpinions } from "@/components/admin-refresh-opinions"
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -13,7 +14,10 @@ export default async function AdminPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Panel admina</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">Panel admina</h1>
+        <AdminRefreshOpinions />
+      </div>
       <AdminNav />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
