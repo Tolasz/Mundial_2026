@@ -145,6 +145,7 @@ async function fetchPredictionStats(
 
 interface LeaderboardEntry {
   rank: number
+  userId: string
   nick: string
   totalPoints: number
   exactHits: number
@@ -155,7 +156,7 @@ async function fetchLeaderboard(
 ): Promise<LeaderboardEntry[]> {
   const { data } = await supabase
     .from("leaderboard")
-    .select("nick, total_points, exact_hits")
+    .select("user_id, nick, total_points, exact_hits")
     .order("total_points", { ascending: false })
     .order("exact_hits", { ascending: false })
     .limit(15)
@@ -172,6 +173,7 @@ async function fetchLeaderboard(
     }
     return {
       rank,
+      userId: row.user_id ?? "",
       nick: row.nick ?? "Gracz",
       totalPoints: row.total_points ?? 0,
       exactHits: row.exact_hits ?? 0,
@@ -179,11 +181,54 @@ async function fetchLeaderboard(
   })
 }
 
-function buildLeaderboardBlock(entries: LeaderboardEntry[]): string {
+/** Pobiera poprzedni snapshot tabeli (najnowszy z dat < dzisiaj). */
+async function fetchPreviousSnapshot(
+  supabase: Supabase,
+): Promise<Map<string, number>> {
+  const today = new Date().toISOString().slice(0, 10)
+
+  // 1. Znajdź datę ostatniego snapshotu przed dzisiaj
+  const { data: dateRow } = await supabase
+    .from("leaderboard_snapshots")
+    .select("snapshot_date")
+    .lt("snapshot_date", today)
+    .order("snapshot_date", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (!dateRow) return new Map()
+
+  // 2. Pobierz wszystkich graczy z tej daty
+  const { data } = await supabase
+    .from("leaderboard_snapshots")
+    .select("user_id, rank")
+    .eq("snapshot_date", dateRow.snapshot_date)
+
+  if (!data) return new Map()
+
+  const map = new Map<string, number>()
+  for (const row of data) {
+    map.set(row.user_id as string, row.rank as number)
+  }
+  return map
+}
+
+function buildLeaderboardBlock(
+  entries: LeaderboardEntry[],
+  prevRanks: Map<string, number>,
+): string {
   if (entries.length === 0) return "Brak danych o tabeli."
-  const rows = entries.map(
-    (e) => `  ${e.rank}. ${e.nick} — ${e.totalPoints} pkt (${e.exactHits} dokładnych)`,
-  )
+  const rows = entries.map((e) => {
+    const prev = prevRanks.get(e.userId)
+    let delta = ""
+    if (prev !== undefined) {
+      const diff = prev - e.rank // dodatnia = awans
+      if (diff > 0) delta = ` ▲${diff}`
+      else if (diff < 0) delta = ` ▼${Math.abs(diff)}`
+      else delta = " ="
+    }
+    return `  ${e.rank}. ${e.nick}${delta} — ${e.totalPoints} pkt (${e.exactHits} dokładnych)`
+  })
   return `Aktualna tabela graczy (top ${entries.length}):\n${rows.join("\n")}`
 }
 
@@ -391,9 +436,12 @@ export async function generateDailySummaries(
   // 5. Pobierz poprzednie typy ekspertów
   const expertPicks = await fetchExpertPreviousPicks(supabase, matchIds)
 
-  // 5b. Pobierz tabelę liderów
-  const leaderboardEntries = await fetchLeaderboard(supabase)
-  const leaderboardBlock = buildLeaderboardBlock(leaderboardEntries)
+  // 5b. Pobierz tabelę liderów i poprzedni snapshot (równolegle)
+  const [leaderboardEntries, prevRanks] = await Promise.all([
+    fetchLeaderboard(supabase),
+    fetchPreviousSnapshot(supabase),
+  ])
+  const leaderboardBlock = buildLeaderboardBlock(leaderboardEntries, prevRanks)
 
   // 6. Zbuduj prompt block
   const matchesBlock = buildSummaryPromptBlock(
