@@ -13,10 +13,10 @@ function PointsBadge({ points }: { points: number | null }) {
   if (points === null) return null
   const color =
     points === 3
-      ? "text-green-500"
+      ? "text-green-600 dark:text-green-400"
       : points === 1
-        ? "text-yellow-500"
-        : "text-muted-foreground"
+        ? "text-yellow-600 dark:text-yellow-400"
+        : "text-red-600 dark:text-red-400"
   return <span className={`text-xs font-semibold tabular-nums ${color}`}>{points} pkt</span>
 }
 
@@ -35,7 +35,15 @@ export function OthersPredictions({ predictions }: OthersPredictionsProps) {
         {predictions.map((p) => (
           <li
             key={p.nick}
-            className="flex items-center justify-between gap-2 rounded px-2 py-1 bg-muted/40 text-xs"
+            className={`flex items-center justify-between gap-2 rounded px-2 py-1 text-xs ${
+              p.pointsAwarded === 3
+                ? "bg-green-500/10"
+                : p.pointsAwarded === 1
+                  ? "bg-yellow-500/10"
+                  : p.pointsAwarded === 0
+                    ? "bg-red-500/10"
+                    : "bg-muted/40"
+            }`}
           >
             <span className="font-medium truncate max-w-[140px]">{p.nick}</span>
             <span className="tabular-nums font-semibold shrink-0">
