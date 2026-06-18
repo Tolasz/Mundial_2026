@@ -48,6 +48,7 @@ export type Database = {
         Row: {
           display_name: string
           generated_at: string
+          is_active: boolean
           matches_covered: Json
           persona: string
           summary: string
@@ -55,6 +56,7 @@ export type Database = {
         Insert: {
           display_name: string
           generated_at?: string
+          is_active?: boolean
           matches_covered?: Json
           persona: string
           summary: string
@@ -62,9 +64,43 @@ export type Database = {
         Update: {
           display_name?: string
           generated_at?: string
+          is_active?: boolean
           matches_covered?: Json
           persona?: string
           summary?: string
+        }
+        Relationships: []
+      }
+      expert_comments: {
+        Row: {
+          body: string
+          commenter_display_name: string
+          commenter_persona: string
+          generated_at: string
+          id: string
+          post_persona: string
+          post_type: string
+          stance: string | null
+        }
+        Insert: {
+          body: string
+          commenter_display_name: string
+          commenter_persona: string
+          generated_at?: string
+          id?: string
+          post_persona: string
+          post_type: string
+          stance?: string | null
+        }
+        Update: {
+          body?: string
+          commenter_display_name?: string
+          commenter_persona?: string
+          generated_at?: string
+          id?: string
+          post_persona?: string
+          post_type?: string
+          stance?: string | null
         }
         Relationships: []
       }
@@ -73,6 +109,7 @@ export type Database = {
           display_name: string
           generated_at: string
           intro: string
+          is_active: boolean
           persona: string
           picks: Json
         }
@@ -80,6 +117,7 @@ export type Database = {
           display_name: string
           generated_at?: string
           intro: string
+          is_active?: boolean
           persona: string
           picks?: Json
         }
@@ -87,6 +125,7 @@ export type Database = {
           display_name?: string
           generated_at?: string
           intro?: string
+          is_active?: boolean
           persona?: string
           picks?: Json
         }

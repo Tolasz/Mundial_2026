@@ -15,7 +15,7 @@ export function UpcomingMatches({ matches, now }: UpcomingMatchesProps) {
         <h2 className="text-lg font-semibold mb-3">Najbliższe mecze (24h)</h2>
         <div className="flex flex-col items-center gap-3 py-10 rounded-xl border border-dashed border-border text-center">
           <CalendarX className="size-9 text-muted-foreground/30" aria-hidden />
-          <p className="text-sm text-muted-foreground">Brak meczów w ciągu najbliższych 24 godzin.</p>
+          <p className="text-sm text-muted-foreground">Brak nadchodzących meczów.</p>
         </div>
       </section>
     )

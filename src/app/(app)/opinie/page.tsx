@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import {
   ExpertOpinionCard,
   type ExpertPickDisplay,
+  type ExpertComment,
 } from "@/components/expert-opinion-card"
 import { AdminRefreshOpinions } from "@/components/admin-refresh-opinions"
 
@@ -23,11 +24,35 @@ export default async function OpiniePage() {
 
   const isAdmin = profile?.is_admin ?? false
 
-  // Pobierz aktualne opinie ekspertów
+  // Pobierz aktywne opinie ekspertów (3 z danej rundy)
   const { data: opinions, error } = await supabase
     .from("expert_opinions")
     .select("persona, display_name, intro, picks, generated_at")
+    .eq("is_active", true)
     .order("persona")
+
+  // Pobierz komentarze do aktywnych opinii
+  const activePersonas = (opinions ?? []).map(o => o.persona as string)
+  const { data: allComments } = activePersonas.length > 0
+    ? await supabase
+        .from("expert_comments")
+        .select("post_persona, commenter_persona, commenter_display_name, stance, body")
+        .eq("post_type", "opinion")
+        .in("post_persona", activePersonas)
+    : { data: [] }
+
+  // Grupuj komentarze po poście
+  const commentsByPost = new Map<string, ExpertComment[]>()
+  for (const c of allComments ?? []) {
+    const key = c.post_persona as string
+    if (!commentsByPost.has(key)) commentsByPost.set(key, [])
+    commentsByPost.get(key)!.push({
+      commenterPersona: c.commenter_persona as string,
+      commenterDisplayName: c.commenter_display_name as string,
+      stance: c.stance as string | null,
+      body: c.body as string,
+    })
+  }
 
   if (error) {
     return (
@@ -89,6 +114,7 @@ export default async function OpiniePage() {
                 intro={opinion.intro}
                 picks={picks}
                 colorIndex={index}
+                comments={commentsByPost.get(opinion.persona as string)}
               />
             )
           })}

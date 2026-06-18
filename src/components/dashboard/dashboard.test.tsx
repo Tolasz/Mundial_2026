@@ -77,6 +77,7 @@ function makeMatch(id: string, kickoffAt: string): DashboardMatchVM {
     roundLabel: null,
     home: team("POL"),
     away: team("BRA"),
+    prediction: null,
   }
 }
 

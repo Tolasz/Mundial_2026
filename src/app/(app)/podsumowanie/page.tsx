@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { DailySummaryCard } from "@/components/daily-summary-card"
 import { AdminRefreshOpinions } from "@/components/admin-refresh-opinions"
+import type { ExpertComment } from "@/components/expert-opinion-card"
 
 export default async function PodsumowaniePage() {
   const supabase = await createClient()
@@ -20,11 +21,35 @@ export default async function PodsumowaniePage() {
 
   const isAdmin = profile?.is_admin ?? false
 
-  // Pobierz aktualne podsumowania
+  // Pobierz aktywne podsumowania (3 z danej rundy)
   const { data: summaries, error } = await supabase
     .from("daily_summaries")
     .select("persona, display_name, summary, matches_covered, generated_at")
+    .eq("is_active", true)
     .order("persona")
+
+  // Pobierz komentarze do aktywnych podsumowań
+  const activePersonas = (summaries ?? []).map(s => s.persona as string)
+  const { data: allComments } = activePersonas.length > 0
+    ? await supabase
+        .from("expert_comments")
+        .select("post_persona, commenter_persona, commenter_display_name, stance, body")
+        .eq("post_type", "summary")
+        .in("post_persona", activePersonas)
+    : { data: [] }
+
+  // Grupuj komentarze po poście
+  const commentsByPost = new Map<string, ExpertComment[]>()
+  for (const c of allComments ?? []) {
+    const key = c.post_persona as string
+    if (!commentsByPost.has(key)) commentsByPost.set(key, [])
+    commentsByPost.get(key)!.push({
+      commenterPersona: c.commenter_persona as string,
+      commenterDisplayName: c.commenter_display_name as string,
+      stance: c.stance as string | null,
+      body: c.body as string,
+    })
+  }
 
   if (error) {
     return (
@@ -109,6 +134,7 @@ export default async function PodsumowaniePage() {
               summary={s.summary as string}
               generatedAt={s.generated_at as string}
               colorIndex={index}
+              comments={commentsByPost.get(s.persona as string)}
             />
           ))}
         </div>

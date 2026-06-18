@@ -16,11 +16,19 @@ export interface ExpertPickDisplay {
   reason: string
 }
 
+export interface ExpertComment {
+  commenterPersona: string
+  commenterDisplayName: string
+  stance?: string | null
+  body: string
+}
+
 interface ExpertOpinionCardProps {
   displayName: string
   intro: string
   picks: ExpertPickDisplay[]
   colorIndex?: number
+  comments?: ExpertComment[]
 }
 
 const AVATAR_COLORS = [
@@ -40,6 +48,7 @@ export function ExpertOpinionCard({
   intro,
   picks,
   colorIndex = 0,
+  comments,
 }: ExpertOpinionCardProps) {
   const ci = colorIndex % 3
   const initial = displayName.charAt(0).toUpperCase()
@@ -112,6 +121,31 @@ export function ExpertOpinionCard({
                 </div>
               )
             })}
+          </div>
+        )}
+
+        {/* Komentarze innych ekspertów */}
+        {comments && comments.length > 0 && (
+          <div className="border-t border-border pt-4 space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Komentarze ekspertów
+            </p>
+            {comments.map((c, i) => (
+              <div key={i} className="flex gap-2.5 items-start">
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0 select-none">
+                  {c.commenterDisplayName.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-sm font-semibold">{c.commenterDisplayName}</span>
+                    {c.stance === "agree" && <span className="text-xs" title="Zgadza się">👍</span>}
+                    {c.stance === "disagree" && <span className="text-xs" title="Nie zgadza się">👎</span>}
+                    {c.stance === "roast" && <span className="text-xs" title="Roast">🔥</span>}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">{c.body}</p>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </CardContent>

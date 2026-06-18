@@ -14,9 +14,52 @@ import {
   type OddsEvent,
 } from "@/lib/odds-api"
 import type { AzureOpenAIClient } from "@/lib/azure-openai"
-import { PERSONAS } from "@/lib/experts/personas"
+import { PERSONAS, type Persona } from "@/lib/experts/personas"
 
 type Supabase = SupabaseClient<Database>
+
+// ------------------------------------
+// Stałe i helpery rotacji
+// ------------------------------------
+
+export const AUTHOR_COUNT = 3
+
+function shuffleArray<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
+
+/** Wybiera n person z wykluczeniem previousRound (unikanie powtórzeń). Fallback gdy pula za mała. */
+export function selectAuthors(
+  personas: readonly Persona[],
+  n: number,
+  excludeKeys: string[],
+): Persona[] {
+  const pool = personas.filter(p => !excludeKeys.includes(p.key))
+  if (pool.length >= n) {
+    return shuffleArray([...pool]).slice(0, n)
+  }
+  const excluded = personas.filter(p => excludeKeys.includes(p.key))
+  return shuffleArray([...pool, ...shuffleArray([...excluded])]).slice(0, n)
+}
+
+/** Przydziela 2-3 losowych komentujących (spoza autorów) do każdego posta. */
+export function assignCommenters(
+  authors: readonly Persona[],
+  allPersonas: readonly Persona[],
+): Map<string, Persona[]> {
+  const authorKeys = new Set(authors.map(a => a.key))
+  const pool = allPersonas.filter(p => !authorKeys.has(p.key))
+  const map = new Map<string, Persona[]>()
+  for (const author of authors) {
+    const count = Math.floor(Math.random() * 2) + 2 // 2 lub 3
+    map.set(author.key, shuffleArray([...pool]).slice(0, count))
+  }
+  return map
+}
 
 // ------------------------------------
 // Typy
@@ -55,6 +98,16 @@ interface LLMPick {
 interface LLMOpinion {
   intro: string
   picks: LLMPick[]
+}
+
+interface LLMComment {
+  postPersona: string
+  stance?: string
+  body: string
+}
+
+interface LLMCommentBatch {
+  comments: LLMComment[]
 }
 
 export interface ExpertOpinionResult {
@@ -171,6 +224,57 @@ function enrichPicks(
         reason: p.reason ?? "",
       }
     })
+}
+
+// ------------------------------------
+// Generowanie komentarzy (współdzielone z generate-summary.ts)
+// ------------------------------------
+
+export async function generateComments(
+  supabase: Supabase,
+  aiClient: AzureOpenAIClient,
+  commenter: Persona,
+  posts: Array<{ postPersona: string; displayName: string; content: string }>,
+  postType: "opinion" | "summary",
+): Promise<void> {
+  const postsBlock = posts
+    .map(p => `--- Post od: ${p.displayName} (klucz: ${p.postPersona}) ---\n${p.content}`)
+    .join("\n\n")
+
+  const userMessage = [
+    `Oto ${posts.length} post${posts.length === 1 ? "" : "y"} ekspertów, do których masz się krótko odnieść:`,
+    "",
+    postsBlock,
+    "",
+    "Skomentuj KAŻDY z tych postów. Użyj klucza z nagłówka (np. \"almost_pewniak\") jako postPersona.",
+  ].join("\n")
+
+  try {
+    const result = await aiClient.chatJson<LLMCommentBatch>([
+      { role: "system", content: commenter.commentSystemPrompt },
+      { role: "user", content: userMessage },
+    ])
+
+    if (!Array.isArray(result.comments)) return
+
+    const rows = result.comments
+      .filter(c => c.postPersona && c.body)
+      .map(c => ({
+        post_type: postType,
+        post_persona: c.postPersona,
+        commenter_persona: commenter.key,
+        commenter_display_name: commenter.displayName,
+        stance: c.stance ?? null,
+        body: c.body,
+        generated_at: new Date().toISOString(),
+      }))
+
+    if (rows.length > 0) {
+      await supabase.from("expert_comments").insert(rows)
+    }
+  } catch {
+    // Komentarze są opcjonalne — błąd nie blokuje rundy
+  }
 }
 
 // ------------------------------------

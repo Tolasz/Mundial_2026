@@ -19,6 +19,12 @@ import {
 import type { AzureOpenAIClient } from "@/lib/azure-openai"
 import type { FootballApi, MatchDetails } from "@/lib/football-api"
 import { PERSONAS } from "@/lib/experts/personas"
+import {
+  selectAuthors,
+  assignCommenters,
+  AUTHOR_COUNT,
+  generateComments,
+} from "@/lib/experts/generate"
 
 type Supabase = SupabaseClient<Database>
 
@@ -410,8 +416,20 @@ export async function generateDailySummaries(
 
   const results: SummaryResult[] = []
 
-  // 8. Generuj podsumowanie dla każdej persony
-  for (const persona of PERSONAS) {
+  // 8a. Pobierz poprzednio aktywne persony (do unikania powtórzeń rundy)
+  const { data: prevActive } = await supabase
+    .from("daily_summaries")
+    .select("persona")
+    .eq("is_active", true)
+  const prevActiveKeys = (prevActive ?? []).map(r => r.persona as string)
+
+  // 8b. Wylosuj 3 autorów z wykluczeniem poprzedniej rundy
+  const authors = selectAuthors([...PERSONAS], AUTHOR_COUNT, prevActiveKeys)
+  const authorKeys = new Set(authors.map(a => a.key))
+  const generatedPosts: Array<{ postPersona: string; displayName: string; content: string }> = []
+
+  // 8. Generuj podsumowanie dla 3 autorów
+  for (const persona of authors) {
     try {
       const userMessage = [
         `Podsumuj wczorajsze mecze Mistrzostw Świata 2026 (${matches.length} mecz${matches.length === 1 ? "" : matches.length < 5 ? "e" : "ów"}):`,
@@ -441,6 +459,7 @@ export async function generateDailySummaries(
           display_name: persona.displayName,
           summary: result.summary,
           matches_covered: matchesCovered as unknown as import("@/types/db").Json,
+          is_active: true,
           generated_at: new Date().toISOString(),
         },
         { onConflict: "persona" },
@@ -448,6 +467,7 @@ export async function generateDailySummaries(
 
       if (error) throw error
 
+      generatedPosts.push({ postPersona: persona.key, displayName: persona.displayName, content: result.summary })
       results.push({ persona: persona.key, ok: true })
     } catch (err) {
       results.push({
@@ -455,6 +475,36 @@ export async function generateDailySummaries(
         ok: false,
         error: err instanceof Error ? err.message : String(err),
       })
+    }
+  }
+
+  // 9. Dezaktywuj pozostałe persony w daily_summaries
+  const nonAuthorKeys = [...PERSONAS].filter(p => !authorKeys.has(p.key)).map(p => p.key)
+  if (nonAuthorKeys.length > 0) {
+    await supabase
+      .from("daily_summaries")
+      .update({ is_active: false })
+      .in("persona", nonAuthorKeys)
+  }
+
+  // 10. Wyczyść stare komentarze podsumowań i wygeneruj nowe (graceful)
+  await supabase.from("expert_comments").delete().eq("post_type", "summary")
+
+  if (generatedPosts.length > 0) {
+    const commenterMap = assignCommenters(authors, PERSONAS)
+    const batchMap = new Map<string, { persona: (typeof PERSONAS)[number]; posts: typeof generatedPosts }>()
+    for (const [postPersona, commenters] of commenterMap) {
+      const post = generatedPosts.find(p => p.postPersona === postPersona)
+      if (!post) continue
+      for (const commenter of commenters) {
+        if (!batchMap.has(commenter.key)) {
+          batchMap.set(commenter.key, { persona: commenter, posts: [] })
+        }
+        batchMap.get(commenter.key)!.posts.push(post)
+      }
+    }
+    for (const { persona: commenter, posts } of batchMap.values()) {
+      await generateComments(supabase, aiClient, commenter, posts, "summary")
     }
   }
 
