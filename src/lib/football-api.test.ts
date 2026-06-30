@@ -130,6 +130,44 @@ describe("mapMatchToResult", () => {
       status: "scheduled",
     })
   })
+
+  it("używa wyniku z 90. minuty (regularTime) dla meczu rozstrzygniętego w karnych", () => {
+    // football-data.org: fullTime zawiera karne (regular 1-1 + karne 3-4 => 4-5),
+    // ale punktacja ma liczyć wynik z 90 minuty: 1-1.
+    const penalties = {
+      ...SAMPLE_MATCH,
+      status: "FINISHED",
+      score: {
+        duration: "PENALTY_SHOOTOUT",
+        fullTime: { home: 4, away: 5 },
+        regularTime: { home: 1, away: 1 },
+      },
+    }
+    expect(mapMatchToResult(penalties)).toEqual({
+      externalId: "12345",
+      homeScore: 1,
+      awayScore: 1,
+      status: "finished",
+    })
+  })
+
+  it("używa wyniku z 90. minuty (regularTime) dla meczu rozstrzygniętego w dogrywce", () => {
+    const extraTime = {
+      ...SAMPLE_MATCH,
+      status: "FINISHED",
+      score: {
+        duration: "EXTRA_TIME",
+        fullTime: { home: 2, away: 1 },
+        regularTime: { home: 1, away: 1 },
+      },
+    }
+    expect(mapMatchToResult(extraTime)).toEqual({
+      externalId: "12345",
+      homeScore: 1,
+      awayScore: 1,
+      status: "finished",
+    })
+  })
 })
 
 describe("FootballDataApi", () => {

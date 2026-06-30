@@ -83,7 +83,12 @@ interface FdTeam {
 }
 
 interface FdScore {
+  /** Czas trwania meczu: REGULAR | EXTRA_TIME | PENALTY_SHOOTOUT. */
+  duration?: string | null
+  /** Wynik końcowy — UWAGA: dla meczów z dogrywką/karnymi zawiera gole z dogrywki i karne. */
   fullTime?: { home: number | null; away: number | null }
+  /** Wynik po regulaminowych 90 minutach (obecny tylko gdy mecz przeszedł w dogrywkę/karne). */
+  regularTime?: { home: number | null; away: number | null }
 }
 
 interface FdMatch {
@@ -205,11 +210,22 @@ export function mapMatchToFixture(m: FdMatch): FixtureDTO {
 }
 
 export function mapMatchToResult(m: FdMatch): ResultDTO {
-  const full = m.score?.fullTime
+  // Punktacja liczy się jak u bukmachera — wynik po 90 minutach (czas regulaminowy),
+  // BEZ dogrywki i rzutów karnych.
+  //
+  // football-data.org zwraca `fullTime` jako wynik łączny: dla meczów rozstrzygniętych
+  // w dogrywce/karnych `fullTime` zawiera gole z dogrywki ORAZ rzuty karne
+  // (np. regularTime 1-1 + karne 3-4 => fullTime 4-5). Dlatego dla takich meczów
+  // bierzemy `regularTime` (wynik z 90. minuty), a dla zwykłych meczów `fullTime`.
+  const score = m.score
+  const ninety =
+    score?.duration && score.duration !== "REGULAR" && score.regularTime
+      ? score.regularTime
+      : score?.fullTime
   return {
     externalId: String(m.id),
-    homeScore: full?.home ?? null,
-    awayScore: full?.away ?? null,
+    homeScore: ninety?.home ?? null,
+    awayScore: ninety?.away ?? null,
     status: mapStatus(m.status),
   }
 }
