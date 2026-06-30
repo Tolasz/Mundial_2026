@@ -170,6 +170,8 @@ export function mapStage(raw: string): MatchStage {
       return "qf"
     case "SEMI_FINALS":
       return "sf"
+    case "THIRD_PLACE":
+      return "third"
     case "FINAL":
       return "final"
     case "GROUP_STAGE":

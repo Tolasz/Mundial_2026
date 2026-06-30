@@ -18,7 +18,7 @@ export interface PlayerStatsVM extends PlayerStats {
   totalPoints: number
 }
 
-const STAGES: MatchStage[] = ["group", "r32", "r16", "qf", "sf", "final"]
+const STAGES: MatchStage[] = ["group", "r32", "r16", "qf", "sf", "third", "final"]
 
 function emptyByStage(): Record<MatchStage, number> {
   return Object.fromEntries(STAGES.map((s) => [s, 0])) as Record<MatchStage, number>

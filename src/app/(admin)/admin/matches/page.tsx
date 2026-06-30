@@ -3,13 +3,14 @@ import { AdminNav } from "../AdminNav"
 import { MatchResultForm } from "./MatchResultForm"
 import type { MatchStage } from "@/types/db"
 
-const STAGE_ORDER: MatchStage[] = ["group", "r32", "r16", "qf", "sf", "final"]
+const STAGE_ORDER: MatchStage[] = ["group", "r32", "r16", "qf", "sf", "third", "final"]
 const STAGE_LABELS: Record<MatchStage, string> = {
   group: "Faza grupowa",
   r32: "1/32 finału",
   r16: "1/16 finału",
   qf: "Ćwierćfinał",
   sf: "Półfinał",
+  third: "Mecz o 3. miejsce",
   final: "Finał",
 }
 

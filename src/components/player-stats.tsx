@@ -15,6 +15,7 @@ const STAGE_LABELS: Record<string, string> = {
   r16: "1/16 finału",
   qf: "Ćwierćfinał",
   sf: "Półfinał",
+  third: "Mecz o 3. miejsce",
   final: "Finał",
 }
 

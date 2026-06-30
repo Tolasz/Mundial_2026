@@ -63,6 +63,7 @@ describe("mapStage", () => {
     expect(mapStage("LAST_16")).toBe("r16")
     expect(mapStage("QUARTER_FINALS")).toBe("qf")
     expect(mapStage("SEMI_FINALS")).toBe("sf")
+    expect(mapStage("THIRD_PLACE")).toBe("third")
     expect(mapStage("FINAL")).toBe("final")
   })
 })

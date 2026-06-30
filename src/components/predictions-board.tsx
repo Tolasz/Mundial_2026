@@ -13,13 +13,14 @@ import { PredictionsToolbar } from "@/components/predictions-toolbar"
 import { MatchPredictionCard } from "@/components/match-prediction-card"
 import { OthersPredictions } from "@/components/others-predictions"
 
-const KNOCKOUT_STAGES = ["r32", "r16", "qf", "sf", "final"] as const
+const KNOCKOUT_STAGES = ["r32", "r16", "qf", "sf", "third", "final"] as const
 
 const STAGE_LABELS: Record<string, string> = {
   r32: "1/16 finału",
   r16: "1/8 finału",
   qf: "Ćwierćfinały",
   sf: "Półfinały",
+  third: "Mecz o 3. miejsce",
   final: "Finał",
 }
 

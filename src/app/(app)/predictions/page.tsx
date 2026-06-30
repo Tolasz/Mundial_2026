@@ -86,7 +86,7 @@ export default async function PredictionsPage() {
          home_team:teams!matches_home_team_id_fkey(id, name, short_name, flag_url),
          away_team:teams!matches_away_team_id_fkey(id, name, short_name, flag_url)`,
       )
-      .in("stage", ["r32", "r16", "qf", "sf", "final"])
+      .in("stage", ["r32", "r16", "qf", "sf", "third", "final"])
       .order("kickoff_at", { ascending: true }),
   ])
 

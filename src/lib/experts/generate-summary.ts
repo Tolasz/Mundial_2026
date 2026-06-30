@@ -333,6 +333,7 @@ function buildSummaryPromptBlock(
         : m.stage === "r16" ? "1/16 finału"
         : m.stage === "qf" ? "ćwierćfinał"
         : m.stage === "sf" ? "półfinał"
+        : m.stage === "third" ? "mecz o 3. miejsce"
         : m.stage === "final" ? "FINAŁ"
         : m.stage
 

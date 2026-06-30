@@ -374,7 +374,7 @@ export type Database = {
       }
     }
     Enums: {
-      match_stage: "group" | "r32" | "r16" | "qf" | "sf" | "final"
+      match_stage: "group" | "r32" | "r16" | "qf" | "sf" | "third" | "final"
       match_status: "scheduled" | "live" | "finished" | "postponed"
     }
     CompositeTypes: {
