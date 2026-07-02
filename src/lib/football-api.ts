@@ -215,15 +215,13 @@ export function mapMatchToResult(m: FdMatch): ResultDTO {
   // Punktacja liczy się jak u bukmachera — wynik po 90 minutach (czas regulaminowy),
   // BEZ dogrywki i rzutów karnych.
   //
-  // football-data.org zwraca `fullTime` jako wynik łączny: dla meczów rozstrzygniętych
-  // w dogrywce/karnych `fullTime` zawiera gole z dogrywki ORAZ rzuty karne
-  // (np. regularTime 1-1 + karne 3-4 => fullTime 4-5). Dlatego dla takich meczów
-  // bierzemy `regularTime` (wynik z 90. minuty), a dla zwykłych meczów `fullTime`.
+  // football-data.org zwraca `regularTime` jako wynik po 90 minutach (obecny tylko
+  // dla meczów, które przeszły w dogrywkę/karne). `fullTime` to wynik łączny —
+  // dla meczów z dogrywką/karnymi zawiera gole z dogrywki ORAZ rzuty karne
+  // (np. regularTime 1-1 + karne 3-4 => fullTime 4-5). Dlatego bierzemy `regularTime`,
+  // a gdy jest null (zwykły mecz rozstrzygnięty w 90 min) — `fullTime`.
   const score = m.score
-  const ninety =
-    score?.duration && score.duration !== "REGULAR" && score.regularTime
-      ? score.regularTime
-      : score?.fullTime
+  const ninety = score?.regularTime ?? score?.fullTime
   return {
     externalId: String(m.id),
     homeScore: ninety?.home ?? null,
