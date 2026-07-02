@@ -57,6 +57,15 @@ export async function adminUpdateMatchResult(input: unknown): Promise<ActionResu
 
   if (error) return { success: false, error: "Błąd zapisu wyniku." }
 
+  // Zapis wyniku musi od razu przeliczyć punkty predykcji — inaczej ręczna korekta
+  // admina zmienia wynik, ale punkty pozostają policzone dla starego rezultatu.
+  const { error: recalcError } = await service.rpc("recalc_match_points", {
+    p_match_id: matchId,
+  })
+  if (recalcError) {
+    return { success: false, error: "Wynik zapisany, ale nie udało się przeliczyć punktów." }
+  }
+
   revalidatePath("/admin/matches")
   revalidatePath("/predictions")
   revalidatePath("/leaderboard")
